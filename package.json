@@ -1,0 +1,20 @@
+{
+  "name": "asome-table",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vue 2 ScrollGroupTable：横向滚动 + 两行分组表头 + 滚动阴影（可左侧冻结列）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "vue": "2.7.16"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue2": "^2.3.1",
+    "vite": "^5.4.11"
+  }
+}

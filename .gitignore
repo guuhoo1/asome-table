@@ -1,0 +1,17 @@
+# 依赖与本地包缓存
+node_modules/
+.pnpm-store/
+
+# 构建产物
+dist/
+
+# 校验脚本生成的报告与截图（脚本本身要提交，产物不提交）
+.verify/*.json
+.verify/*.png
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
