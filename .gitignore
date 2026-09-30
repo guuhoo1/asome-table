@@ -9,6 +9,10 @@ dist/
 .verify/*.json
 .verify/*.png
 
+# Playwright 产物
+test-results/
+playwright-report/
+
 # 编辑器 / 系统
 .DS_Store
 Thumbs.db

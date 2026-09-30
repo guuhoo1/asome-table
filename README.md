@@ -33,6 +33,48 @@ rowSelection / 事件 / 插槽 / 实例方法 的 API 表。
 示例卡片里的源码是用 `import source from './demos/Xxx.vue?raw'` 拿到的，所以**文档里看到的代码
 就是页面上真正跑的那份代码**，不会出现文档和实现不一致的情况。
 
+## 测试
+
+两层测试，都不需要额外下载浏览器（E2E 用本机已安装的 Chrome）：
+
+```bash
+pnpm test             # 纯逻辑单测（node:test，56 项，秒级）
+pnpm test:e2e         # 先 pnpm build，再用 Playwright 跑真实浏览器用例（46 条：桌面 + 手机两种视口）
+pnpm test:e2e:desktop # 只跑桌面项目，调试快
+pnpm test:all         # 单测 + E2E
+```
+
+**单测（node:test）** 覆盖 `src/components/table/*.js` 里的纯函数——它们与 Vue 无关，所以能脱离浏览器直接跑：
+
+| 模块 | 覆盖内容 |
+| --- | --- |
+| `merge.js` | 相邻同值合并、空值不合并、非相邻不合并、跨度与下标 |
+| `selection.js` | 全选/半选、禁用行三种写法、radio 替换语义、keys 与行互查 |
+| `validation.js` | required/pattern/min/max/minLength/maxLength/validator（含 Promise）与短路顺序 |
+| `editorValue.js` | 日期与日期时间在「存储格式」和「控件格式」之间的双向转换 |
+| `columnLayout.js` | 列 key 推导、顺序重排、宽度夹取、覆盖应用 |
+| `sort.js` | 比较器、稳定排序、空值恒排最后、方向循环、受控状态解析 |
+| `docs/highlight.js` | 代码高亮分词与转义 |
+
+**E2E（Playwright）** 配置在 `playwright.config.js`，用例在 `e2e/*.spec.js`，公共定位与操作在 `e2e/helpers.js`：
+
+- 用 `channel: 'chrome'` 跑**本机已安装的 Chrome**，不下载 Playwright 自带浏览器；`webServer` 会自动起
+  `pnpm preview`（端口 4173），本地已有服务时 `reuseExistingServer` 直接复用。
+- 两个 project：`desktop`（1440×900）与 `mobile`（Pixel 5 尺寸 393×727 + 触屏）。移动端刻意关掉了
+  `isMobile` 的移动视口模拟——实测那样会让布局视口与命中判定对不上（`innerWidth` 报 1397 而不是 393），
+  点击会反复被别的元素"拦截"。
+- 覆盖范围：`docs.spec.js` 文档站自身（导航/章节/示例/源码块/复制/锚点/控制台无报错）、
+  `table.spec.js` 表格内核 13 项（分组表头、阴影、吸顶、冻结、合并、编辑与校验、日期控件、勾选、
+  拖宽、拖序、对齐、空态）、`sorting.spec.js` 行排序 5 项（升序/降序/取消、空值恒排最后、
+  排序与编辑共存、排序与合并共存）。
+
+写用例时踩到、并已封装进 `e2e/helpers.js` 的两个坑：
+
+1. 文档页顶部有 sticky 导航栏，Playwright 默认把目标滚到顶部时会撞上它，报「被 `.docs-header` 拦截点击」
+   → 用 `centerOn()` / `safeClick()` 先把元素滚到视口中间。
+2. 拖动场景里连续给两个元素取坐标时，第二次滚动会让第一个元素的坐标失效 → 用 `centerOn()` 只滚一次，
+   再用 `boxCenter()` 连续取点（这也解释了为什么窄屏下"目标中心 + 30px"会落到视口外被夹住）。
+
 ## 代码结构
 
 组件是纯 Vue 2 Options API 写法，不依赖 Composition API，也不需要额外的运行时依赖，可以直接
