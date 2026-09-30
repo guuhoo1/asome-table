@@ -399,6 +399,40 @@ const reordering = await evaluate(async () => {
   return result
 })
 
+// 行排序：点三次表头在升序/降序/取消之间循环，空值恒排最后
+const sorting = await evaluate(async () => {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const block = [...document.querySelectorAll('.demo-block')].find((node) =>
+    node.textContent.includes('点表头排序')
+  )
+  if (!block) return null
+
+  const scroll = block.querySelector('.sgt-scroll')
+  const bodyKeys = () =>
+    [...scroll.querySelectorAll('tbody tr.sgt-row')].map((row) =>
+      row.querySelector('td[data-sgt-key="no"]').textContent.trim()
+    )
+  const header = (key) => scroll.querySelector('thead [data-sgt-header-key="' + key + '"]')
+  const ariaOf = (key) => (header(key) ? header(key).getAttribute('aria-sort') : null)
+  const click = async (key) => {
+    header(key).click()
+    await wait(200)
+  }
+  const hint = () => block.querySelector('.demo-hint').textContent.trim()
+
+  const before = bodyKeys()
+  await click('qty')
+  const ascend = { order: bodyKeys(), aria: ariaOf('qty'), hint: hint() }
+  await click('qty')
+  const descend = { order: bodyKeys(), aria: ariaOf('qty'), hint: hint() }
+  await click('qty')
+  const cancelled = { order: bodyKeys(), aria: ariaOf('qty'), hint: hint() }
+  await click('deliveryDate')
+  const emptyLast = bodyKeys()
+
+  return { before, ascend, descend, cancelled, emptyLast }
+})
+
 // 单行表头（无分组）的拖顺序：能拖、单列开关生效、冻结列拖不出去
 const flatReordering = await evaluate(async () => {
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -666,6 +700,7 @@ console.log(
       resizing,
       reordering,
       flatReordering,
+      sorting,
       realMouseDrag,
       widths: geometry.map((item) => `${item.title}: 表 ${item.tableWidth} / 容器 ${item.containerWidth} / 空白 ${item.blankSpace}`),
       consoleMessages
@@ -675,7 +710,7 @@ console.log(
 writeFileSync(
   new URL('./docs-report.json', import.meta.url),
   JSON.stringify(
-    { docs, geometry, alignment, resizing, reordering, flatReordering, consoleMessages },
+    { docs, geometry, alignment, resizing, reordering, flatReordering, sorting, consoleMessages },
     null,
     2
   )

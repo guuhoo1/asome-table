@@ -244,6 +244,24 @@
           </demo-block>
         </section>
 
+        <section id="sort" class="docs-section">
+          <h2 class="docs-h2">行排序</h2>
+          <p class="docs-p">
+            列上写 <code class="docs-inline-code">sorter: true</code> 就能点表头排序，
+            点击按「升序 → 降序 → 取消」循环，表头带箭头与 <code class="docs-inline-code">aria-sort</code>；
+            写函数 <code class="docs-inline-code">sorter: (a, b) => number</code>
+            可以用自己的比较规则。空值永远排最后，升序降序都一样。
+          </p>
+          <demo-block
+            anchor="demo-sort"
+            title="点表头排序"
+            description="点「数量」在升序/降序/取消之间循环；点「交货日期」可以看空值恒排最后；「客户」列同时可编辑，排好序后改一格，父数组的原始顺序不会被打乱。"
+            :source="sortSource"
+          >
+            <sort-demo />
+          </demo-block>
+        </section>
+
         <section id="diff" class="docs-section">
           <h2 class="docs-h2">与 a-table 的差异</h2>
           <ul class="docs-list">
@@ -299,6 +317,7 @@ import ResizeDemo from './demos/ResizeDemo.vue'
 import ReorderDemo from './demos/ReorderDemo.vue'
 import ReorderFlatDemo from './demos/ReorderFlatDemo.vue'
 import ReorderResizeDemo from './demos/ReorderResizeDemo.vue'
+import SortDemo from './demos/SortDemo.vue'
 import {
   columnTable,
   editableTable,
@@ -321,6 +340,7 @@ import resizeSource from './demos/ResizeDemo.vue?raw'
 import reorderSource from './demos/ReorderDemo.vue?raw'
 import reorderFlatSource from './demos/ReorderFlatDemo.vue?raw'
 import reorderResizeSource from './demos/ReorderResizeDemo.vue?raw'
+import sortSource from './demos/SortDemo.vue?raw'
 
 const INSTALL_SOURCE = [
   '<!-- 1. 模板里直接用 -->',
@@ -371,7 +391,8 @@ export default {
     ResizeDemo,
     ReorderDemo,
     ReorderFlatDemo,
-    ReorderResizeDemo
+    ReorderResizeDemo,
+    SortDemo
   },
   data() {
     return {
@@ -389,6 +410,7 @@ export default {
       reorderSource,
       reorderFlatSource,
       reorderResizeSource,
+      sortSource,
       propsTable,
       columnTable,
       editableTable,
@@ -415,7 +437,8 @@ export default {
             { id: 'date', title: '日期控件' },
             { id: 'empty', title: '空数据与单行表头' },
             { id: 'resize', title: '列宽拖拽' },
-            { id: 'reorder', title: '列顺序拖拽' }
+            { id: 'reorder', title: '列顺序拖拽' },
+            { id: 'sort', title: '行排序' }
           ]
         },
         {
