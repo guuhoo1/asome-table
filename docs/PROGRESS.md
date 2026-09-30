@@ -388,14 +388,16 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 
 ### 下次继续的入口（2026-09-30 收工）
 
-- 路线图进度：**F1–F7 已完成并合并到 `main`**；剩下 F8 合计行 → F9 展开行/固定底行/行拖拽/列筛选
-  → F10 搬进 vela-pc（新增文件 + 路径别名 + 灰度）→ F11 移除旧壳与依赖。
-- 收工时的仓库状态：`main` 本地领先 `origin/main` 2 个提交（F7），原因是推送时 GitHub 连不上
-  （这台机器需要开 VPN）；**网络恢复后先 `git push origin main`** 再继续开发。
+- 路线图进度：**F1–F8 完成，F9 完成「展开行 / 行拖拽 / 固定底行」**（都已推到 `origin/main`）；
+  下一步是 **F9 剩余项：列筛选 `filters`**（表头筛选下拉 + `filteredValue` 受控 + `onFilter` 客户端过滤 /
+  `change` 服务端过滤），然后 **F10 搬进 vela-pc**（新增文件 + 路径别名 + 灰度替换，届时先列改动清单）
+  → F11 移除旧壳与依赖。
+- 收工时的仓库状态：`main` 与 `origin/main` **已同步**（`6a59f36`）。
 - 开发节奏（已验证多轮有效）：开 `codex/<feature>` 分支 → 写计划到
   `docs/superpowers/plans/` → 纯逻辑加单测 → 组件接线 → 文档站示例 + Playwright 用例 →
   三层验证（`pnpm test` / `pnpm build` / `pnpm test:e2e`）全绿 → 合并 main → 推送。
-- 下一轮开工只需说「继续」，我会从 F8 开始，并先补推 F7。
+- 流程失误记录：F9 这一轮忘记先开分支，直接提交到了 `main`（测试全绿、无实际影响），下次注意。
+- 下一轮开工只需说「继续」，我会从 F9 的列筛选开始。
 
 1. **localStorage 列宽缓存兼容**（F4 必做）：老实现的 key 是 `getUniqueKey(路由 path)`，
    由「路由 + 列结构 hash（dataIndex/width 拼 JSON 再算 hash）」组成。复刻时 key 规则必须一致，
