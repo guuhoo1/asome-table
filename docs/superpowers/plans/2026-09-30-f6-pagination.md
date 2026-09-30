@@ -35,7 +35,7 @@
   - 核心 prop `rowIndexOffset`（Number，默认 0）；插槽 `currentIndex = index + rowIndexOffset`，
     序号列的值也按这个偏移计算
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 ```js
 test('resolveDisplayValue 支持额外的序号偏移（分页用）', () => {
@@ -47,12 +47,12 @@ test('resolveDisplayValue 支持额外的序号偏移（分页用）', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**（第 4 个参数被忽略，前两条会得到 1 / 8）
+- [x] **Step 2: 跑测试确认失败**（第 4 个参数被忽略，前两条会得到 1 / 8）
 
 Run: `pnpm test`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```js
 export function resolveDisplayValue(record, column, index, extraSerialOffset = 0) {
@@ -81,8 +81,8 @@ const value = resolveDisplayValue(record, leaf, index, this.rowIndexOffset)
 currentIndex: index + (this.rowIndexOffset || 0),
 ```
 
-- [ ] **Step 4: 跑测试确认通过**（69 → 70 项）
-- [ ] **Step 5: 提交** `feat: 核心支持行号偏移（分页时序号列与 currentIndex 跟随页码）`
+- [x] **Step 4: 跑测试确认通过**（69 → 70 项）
+- [x] **Step 5: 提交** `feat: 核心支持行号偏移（分页时序号列与 currentIndex 跟随页码）`
 
 ## Task 2: 轻量分页组件
 
@@ -99,7 +99,7 @@ currentIndex: index + (this.rowIndexOffset || 0),
 - Produces（组件）: props `total` / `current` / `pageSize` / `showSizeChanger` / `pageSizeOptions`；
   事件 `change(page, pageSize)`；class `atc-pagination`
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 ```js
 import { offsetOf, pageCountOf, pageItemsOf } from '../src/components/table/pagination.js'
@@ -120,7 +120,7 @@ test('pageItemsOf 页数少时全列，多时用省略号', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败** → **Step 3: 实现** → **Step 4: 通过** → **Step 5: 提交**
+- [x] **Step 2: 跑测试确认失败** → **Step 3: 实现** → **Step 4: 通过** → **Step 5: 提交**
 
 ## Task 3: 兼容壳接分页
 
@@ -134,7 +134,7 @@ test('pageItemsOf 页数少时全列，多时用省略号', () => {
 - Produces: computed `paginationConfig`；方法 `handlePageChange(page, pageSize)`；
   分页激活时给核心传 `:row-index-offset="offsetOf(current, pageSize)"`
 
-- [ ] **Step 1: 写失败的断言**
+- [x] **Step 1: 写失败的断言**
 
 ```js
 test('分页：页码 / 每页条数 / change 事件 / 序号跟随页码', async ({ page }) => {
@@ -159,10 +159,10 @@ test('分页：pagination=false 时不渲染分页', async ({ page }) => {
 })
 ```
 
-- [ ] **Step 2: 跑断言确认失败**
-- [ ] **Step 3: 实现**（`paginationConfig` / `handlePageChange` / 模板里渲染分页并传 `row-index-offset`）
-- [ ] **Step 4: 跑断言确认通过**
-- [ ] **Step 5: 提交**
+- [x] **Step 2: 跑断言确认失败**
+- [x] **Step 3: 实现**（`paginationConfig` / `handlePageChange` / 模板里渲染分页并传 `row-index-offset`）
+- [x] **Step 4: 跑断言确认通过**
+- [x] **Step 5: 提交**
 
 ## Task 4: 文档与记录
 

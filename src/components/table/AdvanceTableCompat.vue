@@ -74,6 +74,7 @@
       :custom-row="compatCustomRow"
       :resizable="drag"
       :reorderable="drag"
+      :row-index-offset="rowIndexOffset"
       v-on="$listeners"
       @column-resize="onColumnChange"
       @column-reorder="onColumnChange"
@@ -86,11 +87,23 @@
         <slot name="empty" />
       </template>
     </scroll-group-table>
+
+    <simple-pagination
+      v-if="paginationConfig"
+      :total="paginationConfig.total || 0"
+      :current="paginationConfig.current || 1"
+      :page-size="paginationConfig.pageSize || 10"
+      :show-size-changer="!!paginationConfig.showSizeChanger"
+      :page-size-options="paginationConfig.pageSizeOptions"
+      @change="handlePageChange"
+    />
   </div>
 </template>
 
 <script>
 import ScrollGroupTable from '../ScrollGroupTable.vue'
+import SimplePagination from './SimplePagination.vue'
+import { offsetOf } from './pagination.js'
 import {
   applyColumnCache,
   filterVisibleColumns,
@@ -113,7 +126,7 @@ import {
  */
 export default {
   name: 'AdvanceTableCompat',
-  components: { ScrollGroupTable },
+  components: { ScrollGroupTable, SimplePagination },
   inheritAttrs: false,
   props: {
     // ---- 透传给核心的能力 ----
@@ -180,7 +193,9 @@ export default {
       columnCache: null,
       /** { [列 key]: boolean }；没记录的列默认可见（与老壳一致，且不持久化） */
       visibleConfig: {},
-      columnsOpen: false
+      columnsOpen: false,
+      /** withDefaultPagination 时组件内部维护的页码 */
+      pageInfo: { pageStart: 1, pageNums: 10 }
     }
   },
   created() {
@@ -257,6 +272,37 @@ export default {
       const visibleCount = this.columnConfigList.filter((item) => item.visible).length
       return visibleCount > 0 && visibleCount < this.columnConfigList.length
     },
+    /**
+     * 分页配置（对齐老壳 paginationObj）：
+     * - `pagination === false` → 不渲染分页
+     * - `withDefaultPagination` → 组件内置页码，只更新自己的 pageInfo（老壳不向外发 change）
+     * - 对象写法 → 原样透传，并补上老壳固定的 pageSizeOptions
+     */
+    paginationConfig() {
+      const config = this.pagination
+      if (config === false) return null
+
+      if (this.withDefaultPagination) {
+        return {
+          current: this.pageInfo.pageStart,
+          pageSize: this.pageInfo.pageNums,
+          showSizeChanger: true,
+          total: (config && config.total) || this.dataSource.length
+        }
+      }
+
+      if (config && typeof config === 'object') {
+        return Object.assign({ pageSizeOptions: ['10', '30', '50', '100'] }, config)
+      }
+
+      return null
+    },
+    /** 分页激活时，序号列与插槽 currentIndex 都要带上页码偏移 */
+    rowIndexOffset() {
+      const config = this.paginationConfig
+      if (!config) return 0
+      return offsetOf(config.current, config.pageSize)
+    },
     showAlert() {
       if (!this.alert) return false
       if (this.$slots.alert && !this.selectedCount) return false
@@ -298,6 +344,18 @@ export default {
     },
     closeColumns() {
       if (this.columnsOpen) this.columnsOpen = false
+    },
+    /** 页码 / 每页条数变化 */
+    handlePageChange(page, pageSize) {
+      const config = this.paginationConfig || {}
+
+      if (this.withDefaultPagination) {
+        // 老壳行为：内置分页只更新自己的页码，不向外发 change（页面自己发请求）
+        this.pageInfo = { pageStart: page, pageNums: pageSize }
+        return
+      }
+
+      this.$emit('change', Object.assign({}, config, { current: page, pageSize }), {}, {})
     },
     /** 老壳会把 dblclick 变成 dblclickRow 事件，同时保留页面自己传的 customRow */
     compatCustomRow(record, index) {

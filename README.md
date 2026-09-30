@@ -250,6 +250,31 @@ props / 事件 / 插槽写法不用改，内部把契约翻译给核心组件。
 - 与老壳一致：**可见性不持久化**（老壳的 `visibleConfig` 只存在内存里，挂载时重置为全部可见）
 - 重置会发 `reset` 事件（老壳当前版本的 `@reset` 其实从不触发，我们补上更安全）
 
+**分页**（`:pagination` 写法与老壳一致，**组件不切片数据**）
+
+```vue
+<advance-table-compat
+  :columns="columns"
+  :data-source="pagedRows"          <!-- 页面自己按页码取数/切片 -->
+  :pagination="{ current: page.current, pageSize: page.pageSize, total: rows.length, showSizeChanger: true }"
+  @change="onChange"
+/>
+```
+
+```js
+onChange(pagination, filters, sorter) {
+  // 与老壳一致：`change(pagination, filters, sorter)`，filters / sorter 目前固定传 {}
+  this.page = { current: pagination.current, pageSize: pagination.pageSize }
+  this.fetchList()   // 页面自己发请求
+}
+```
+
+- `:pagination="false"` 时不渲染分页；对象写法会自动补上老壳固定的
+  `pageSizeOptions = ['10','30','50','100']`
+- `withDefaultPagination` 为真时用组件内置页码，且**不向外发 `change`**（老壳行为）
+- 分页激活时序号列与插槽的 `currentIndex` 会带上页码偏移
+  （核心的 `rowIndexOffset = (current - 1) * pageSize`）
+
 **已声明但暂未实现**（避免调用方报错或误用；按路线图 F4–F9 逐个补）：`pagination`、
 `summary` / `summaryData` / `summaryRender`、`isNeedAutoTableHight` / `reservedHeight`、
 `isFixedBottom` / `isFixedSecondBottom`、`dragSort`、`columnStorage`、`formatConditions`、

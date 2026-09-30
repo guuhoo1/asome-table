@@ -31,7 +31,7 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 | F3 | 兼容壳 `AdvanceTableCompat`（标题栏/刷新/列名插槽/选中提示条/默认居中） | ✅ 已完成（列配置与持久化属 F4/F5） |
 | F4 | 列宽/列序持久化（复刻 localStorage key） | ✅ 已完成 |
 | F5 | 列显隐（面板；可见性不持久化，与老壳一致） | ✅ 已完成 |
-| F6 | 分页透传 + `change` 参数对齐 | ⬜ |
+| F6 | 分页透传 + `change` 参数对齐 | ✅ 已完成 |
 | F7 | 自动高度 `isNeedAutoTableHight` | ⬜ |
 | F8 | 合计行 `summary` | ⬜ |
 | F9 | 展开行 / 固定底行 / 行拖拽 / 列筛选 | ⬜ |
@@ -233,6 +233,45 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
     （`resetColumns` 里 emit 被注释掉了，但 `AdvanceTable` 仍绑着监听）。
     → 为无缝，我们保持「可见性不持久化」；但把 `reset` 事件补上——依赖一个从不触发的事件是坏味道，
     补上不会有兼容风险。
+
+---
+
+## 迭代 5：F6 分页透传（2026-09-30）✅
+
+**目标**：让兼容壳按老壳方式渲染分页并发 `change(pagination, filters, sorter)`，
+页面继续用 `:pagination="{ current, pageSize, total }"`。
+
+**计划**：`docs/superpowers/plans/2026-09-30-f6-pagination.md`
+
+**做了什么**
+
+- 核心补 `rowIndexOffset` prop（默认 0）：序号列与插槽 `currentIndex` 都按它偏移；
+  `resolveDisplayValue` 增加第 4 个参数 `extraSerialOffset` + 2 项单测
+- `src/components/table/pagination.js`：`pageCountOf` / `offsetOf` / `pageItemsOf`（带省略号的页码序列）+ 4 项单测
+- `src/components/table/SimplePagination.vue`：自带轻量分页（共 N 条 / 上下页 / 页码 / 省略号 / 每页条数选择），
+  **不依赖 antd**
+- 兼容壳：`paginationConfig` 对齐老壳 `paginationObj`（`false` 不渲染、对象写法补 `pageSizeOptions`、
+  `withDefaultPagination` 用内置页码且不发 `change`）；`handlePageChange` 发
+  `change(pagination, {}, {})`；把 `rowIndexOffset` 传给核心
+- 示例加分页 + 序号列 + `@change`；E2E 新增「分页：渲染页码、翻页发 change、序号跟随页码」× 桌面/手机
+
+**验证**
+
+- `pnpm test`：**74 项全绿**（69 → 74）
+- `pnpm test:e2e`：**66 条全绿**（64 → 66）
+- `pnpm build`：通过
+- 关键结论：第 1 页序号 1、翻到第 2 页序号变 3（页码偏移生效），
+  `change` 事件参数为 `current=2, pageSize=2`；`pagination="false"` 的示例不渲染分页
+
+### 这一段踩的坑
+
+23. **分页不切片数据这件事容易被误解**：老壳（antd Table）的分页同样不切数据，页面拿
+    `change` 事件自己去请求。示例里我一开始直接传全量数据，结果"翻到第 2 页还是 4 行、
+    序号变成 3/4/5/6"看起来很怪——加上页面侧切片（`pagedRows`）后才符合真实用法。
+    这条已写进 README 的示例注释，避免迁移时踩。
+24. **纯逻辑放哪里的判断**：分页的页码序列（省略号）是纯计算，抽到 `pagination.js` 才有单测；
+    UI 单独一个 `SimplePagination.vue`；兼容壳只做「配置翻译 + 事件」。层次清楚后，
+    核心组件一行分页代码都没有。
 
 ---
 

@@ -77,6 +77,21 @@ test.describe('兼容壳 AdvanceTableCompat', () => {
     expect(await widthOf('customer')).toBe(after)
   })
 
+  test('分页：渲染页码、翻页发 change 事件、序号列跟随页码', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '兼容壳')
+
+    await expect(block.locator('.atc-pagination')).toContainText('共 4 条')
+    // 第 1 页：序号从 1 开始（pageSize=2，只显示 2 行）
+    await expect(rows(block)).toHaveCount(2)
+    await expect(rows(block).first().locator('td[data-sgt-key="serial"]')).toHaveText('1')
+
+    await safeClick(block.locator('.atc-pagination .atc-page-btn', { hasText: '2' }))
+
+    await expect(block.locator('.demo-hint')).toContainText('change: current=2, pageSize=2')
+    await expect(rows(block).first().locator('td[data-sgt-key="serial"]')).toHaveText('3')
+  })
+
   test('列显隐：取消勾选即隐藏，全选与重置恢复', async ({ page }) => {
     await page.goto('/')
     const block = demo(page, '兼容壳')
