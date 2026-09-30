@@ -348,6 +348,25 @@
           </demo-block>
         </section>
 
+        <section id="advance-row-features" class="docs-section">
+          <h2 class="docs-h2">兼容壳：展开行 / 行拖拽 / 固定底行</h2>
+          <p class="docs-p">
+            三个行级能力的对齐：<code class="docs-inline-code">expandedRowRender</code>
+            （点行首箭头展开明细，契约与老壳一致：`(record, index, indent, expanded) => VNode`）、
+            <code class="docs-inline-code">dragSort</code>（按住行拖动换顺序，就地把数据顺序改掉并发
+            <code class="docs-inline-code">drop(source, target, isDrop)</code>，与老壳完全一致）、
+            <code class="docs-inline-code">isFixedBottom</code>（最后一行钉在滚动区底部）。
+          </p>
+          <demo-block
+            anchor="demo-advance-row-features"
+            title="行特性：展开 / 拖拽 / 固定底行"
+            description="点行首箭头展开明细；鼠标按住某行拖到另一行上松手可以换顺序（下方提示会显示 drop 的来源与目标）；表格滚动时最后一行始终钉在底部。"
+            :source="advanceRowFeaturesSource"
+          >
+            <advance-row-features-demo />
+          </demo-block>
+        </section>
+
         <section id="diff" class="docs-section">
           <h2 class="docs-h2">与 a-table 的差异</h2>
           <ul class="docs-list">
@@ -409,6 +428,7 @@ import ColumnCompatDemo from './demos/ColumnCompatDemo.vue'
 import AdvanceCompatDemo from './demos/AdvanceCompatDemo.vue'
 import AdvanceAutoHeightDemo from './demos/AdvanceAutoHeightDemo.vue'
 import AdvanceSummaryDemo from './demos/AdvanceSummaryDemo.vue'
+import AdvanceRowFeaturesDemo from './demos/AdvanceRowFeaturesDemo.vue'
 import {
   columnTable,
   editableTable,
@@ -437,6 +457,7 @@ import columnCompatSource from './demos/ColumnCompatDemo.vue?raw'
 import advanceCompatSource from './demos/AdvanceCompatDemo.vue?raw'
 import advanceAutoHeightSource from './demos/AdvanceAutoHeightDemo.vue?raw'
 import advanceSummarySource from './demos/AdvanceSummaryDemo.vue?raw'
+import advanceRowFeaturesSource from './demos/AdvanceRowFeaturesDemo.vue?raw'
 
 const INSTALL_SOURCE = [
   '<!-- 1. 模板里直接用 -->',
@@ -493,7 +514,8 @@ export default {
     ColumnCompatDemo,
     AdvanceCompatDemo,
     AdvanceAutoHeightDemo,
-    AdvanceSummaryDemo
+    AdvanceSummaryDemo,
+    AdvanceRowFeaturesDemo
   },
   data() {
     return {
@@ -517,6 +539,7 @@ export default {
       advanceCompatSource,
       advanceAutoHeightSource,
       advanceSummarySource,
+      advanceRowFeaturesSource,
       propsTable,
       columnTable,
       editableTable,
@@ -548,7 +571,8 @@ export default {
             { id: 'column-compat', title: '列级兼容' },
             { id: 'advance-compat', title: '兼容壳' },
             { id: 'advance-auto-height', title: '兼容壳 · 自动高度' },
-            { id: 'advance-summary', title: '兼容壳 · 合计行' }
+            { id: 'advance-summary', title: '兼容壳 · 合计行' },
+            { id: 'advance-row-features', title: '兼容壳 · 展开/拖拽/底行' }
           ]
         },
         {

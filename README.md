@@ -309,6 +309,28 @@ onChange(pagination, filters, sorter) {
 - 与老壳的差异：老壳用 `appendChild` 往 `tbody` 注入 DOM，这里是核心组件的 `summary` 插槽**真实渲染**
 - `summaryRender()` 仍兼容老契约（无参、返回 DOM 节点）→ 节点会被塞进合计行容器
 
+**展开行 / 行拖拽 / 固定底行**
+
+```vue
+<advance-table-compat
+  drag-sort
+  is-fixed-bottom
+  :expanded-row-render="(record, index, indent, expanded, h) => h('div', '明细…')"
+  :columns="columns"
+  :data-source="rows"
+  row-key="no"
+  :scroll="{ y: 220 }"
+  @drop="(source, target) => {}"
+/>
+```
+
+- `expandedRowRender`：行首出现展开箭头，契约与老壳一致（`(record, index, indent, expanded) => VNode`），
+  另外会发 `expand(expanded, record)` / `expandedRowsChange(keys)`；`expandedRowKeys` 可受控
+- `dragSort`：按住行拖动换顺序——**就地改数据顺序**（与老壳一致）并发
+  `drop(source, target, isDrop)`，同时发 `update:dataSource` 方便用 `.sync` 的页面
+- `isFixedBottom` / `isFixedSecondBottom`：最后一行 / 倒数第二行用 sticky 钉在滚动区底部。
+  与老壳的差异：老壳把 `tr` 设成 sticky（部分浏览器不生效），这里设在 `td` 上，视觉一致但真的生效
+
 **已声明但暂未实现**（避免调用方报错或误用；按路线图 F4–F9 逐个补）：`pagination`、
 `summary` / `summaryData` / `summaryRender`、`isNeedAutoTableHight` / `reservedHeight`、
 `isFixedBottom` / `isFixedSecondBottom`、`dragSort`、`columnStorage`、`formatConditions`、

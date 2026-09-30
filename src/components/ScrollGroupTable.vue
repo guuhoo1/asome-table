@@ -13,6 +13,11 @@
         <thead v-if="showHeader">
           <tr class="sgt-head-row-1">
             <th
+              v-if="expandColumnEnabled"
+              class="sgt-cell sgt-expand-cell"
+              :rowspan="hasGroupHeader ? 2 : null"
+            ></th>
+            <th
               v-if="selectionColumnEnabled"
               class="sgt-cell sgt-selection-cell"
               :class="{ 'sgt-fixed-left': selectionFixed }"
@@ -174,13 +179,25 @@
             </tr>
           </template>
           <template v-else>
-            <tr
-              v-for="(record, index) in displayRows"
-              :key="getRowKey(record, index)"
-              class="sgt-row"
-              :class="rowClasses(record, index)"
-              v-on="getRowEvents(record, index)"
-            >
+            <template v-for="(record, index) in displayRows">
+              <tr
+                :key="getRowKey(record, index)"
+                class="sgt-row"
+                :class="rowClasses(record, index)"
+                v-on="getRowEvents(record, index)"
+              >
+              <td v-if="expandColumnEnabled" class="sgt-cell sgt-expand-cell">
+                <button
+                  type="button"
+                  class="sgt-expand-btn"
+                  :class="{ 'is-expanded': isRowExpanded(record, index) }"
+                  :aria-expanded="isRowExpanded(record, index) ? 'true' : 'false'"
+                  aria-label="展开该行"
+                  @click.stop="toggleExpand(record, index)"
+                >
+                  ▸
+                </button>
+              </td>
               <td
                 v-if="selectionColumnEnabled"
                 class="sgt-cell sgt-selection-cell"
@@ -273,6 +290,21 @@
                 <template v-else>{{ displayText(leaf, record, index) }}</template>
               </td>
             </tr>
+            <tr
+              v-if="isRowExpanded(record, index)"
+              :key="'expanded-' + getRowKey(record, index)"
+              class="sgt-expanded-row"
+            >
+              <td class="sgt-cell sgt-expanded-cell" :colspan="totalLeafCount">
+                <content-renderer
+                  :render="expandedRowRender"
+                  :record="record"
+                  :index="index"
+                  :expanded="true"
+                />
+              </td>
+            </tr>
+            </template>
             <!-- 合计行等自定义表体尾行：真实渲染，不像老壳那样 appendChild 注入 -->
             <slot name="summary" />
           </template>
@@ -375,9 +407,30 @@ const CellRenderer = {
   }
 }
 
+/** 展开行内容：把函数返回的 VNode / 字符串 / 数组统一渲染出来 */
+const ContentRenderer = {
+  name: 'SgtContentRenderer',
+  functional: true,
+  props: {
+    render: { type: Function, required: true },
+    record: { type: Object, required: true },
+    index: { type: Number, required: true },
+    indent: { type: Number, default: 0 },
+    expanded: { type: Boolean, default: true }
+  },
+  render(h, context) {
+    const { render, record, index, indent, expanded } = context.props
+    const rendered = render(record, index, indent, expanded, h)
+    if (Array.isArray(rendered)) return rendered
+    if (rendered && typeof rendered === 'object') return rendered
+    if (rendered === null || rendered === undefined) return h('span')
+    return h('span', String(rendered))
+  }
+}
+
 export default {
   name: 'ScrollGroupTable',
-  components: { CellRenderer },
+  components: { CellRenderer, ContentRenderer },
   props: {
     /** 列定义，antd 结构：{ title, dataIndex, key, width, align, fixed, className, children, customRender, scopedSlots } */
     columns: { type: Array, default: () => [] },
@@ -397,6 +450,11 @@ export default {
     sortedInfo: { type: Object, default: null },
     /** 行号偏移（分页时 = (current - 1) * pageSize）：影响序号列与插槽的 currentIndex */
     rowIndexOffset: { type: Number, default: 0 },
+    /** 展开行内容：(record, index, indent, expanded, h) => VNode | string */
+    expandedRowRender: { type: Function, default: null },
+    /** 受控的展开行 keys；不传则由组件内部维护 */
+    expandedRowKeys: { type: Array, default: null },
+    expandIconColumnIndex: { type: Number, default: 0 },
     /** 开启后表头右边缘出现拖宽热区（列上写 resizable: false 可单独关掉） */
     resizable: { type: Boolean, default: false },
     /** 开启后可以拖动表头调整列顺序（列上写 reorderable: false 可单独关掉） */
@@ -425,6 +483,7 @@ export default {
       dragGhost: null,
       innerSortedInfo: null,
       suppressHeaderClick: false,
+      innerExpandedKeys: [],
       radioGroupName: 'sgt-radio-' + (uidSeed += 1),
       emptyText: EMPTY_TEXT
     }
@@ -583,7 +642,19 @@ export default {
       return buildMergePlan(this.normalizedColumns.leaves, this.displayRows)
     },
     totalLeafCount() {
-      return this.normalizedColumns.leaves.length + (this.selectionColumnEnabled ? 1 : 0)
+      return (
+        this.normalizedColumns.leaves.length +
+        (this.selectionColumnEnabled ? 1 : 0) +
+        (this.expandColumnEnabled ? 1 : 0)
+      )
+    },
+    expandColumnEnabled() {
+      return typeof this.expandedRowRender === 'function'
+    },
+    /** 展开行的 keys：传了 expandedRowKeys 就是受控 */
+    effectiveExpandedKeys() {
+      if (Array.isArray(this.expandedRowKeys)) return this.expandedRowKeys
+      return this.innerExpandedKeys
     },
     /** 左侧冻结列的 left 偏移与总宽度（无冻结列时为 0） */
     leftOffsets() {
@@ -764,6 +835,28 @@ export default {
     },
     getRowKey(record, index) {
       return resolveRowKey(this.rowKey, record, index)
+    },
+    /* ---------------- 展开行 ---------------- */
+    isRowExpanded(record, index) {
+      if (!this.expandColumnEnabled) return false
+      return this.effectiveExpandedKeys.indexOf(this.getRowKey(record, index)) >= 0
+    },
+    toggleExpand(record, index) {
+      if (!this.expandColumnEnabled) return
+      const key = this.getRowKey(record, index)
+      const current = this.effectiveExpandedKeys
+      const next = current.slice()
+      const position = next.indexOf(key)
+      const expanded = position < 0
+
+      if (expanded) next.push(key)
+      else next.splice(position, 1)
+
+      if (!Array.isArray(this.expandedRowKeys)) this.innerExpandedKeys = next
+
+      this.$emit('expand', expanded, record)
+      this.$emit('expandedRowsChange', next)
+      this.$emit('update:expandedRowKeys', next)
     },
     isRowSelected(record, index) {
       return isRowSelectedInKeys(this.selectedKeys, this.rowKey, record, index)
@@ -1578,6 +1671,42 @@ body.sgt-dragging {
 }
 
 /* ---------- 行排序 ---------- */
+.sgt-table th.sgt-expand-cell,
+.sgt-table td.sgt-expand-cell {
+  width: 40px;
+  min-width: 40px;
+  padding: 0 !important;
+  text-align: center;
+}
+
+.sgt-expand-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  color: #4b5563;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.sgt-expand-btn.is-expanded {
+  transform: rotate(90deg);
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.sgt-table td.sgt-expanded-cell {
+  height: auto;
+  padding: 12px 16px;
+  background: #f8fafc;
+  text-align: left;
+  white-space: normal;
+}
+
 .sgt-table td.sgt-cell--ellipsis,
 .sgt-table th.sgt-cell--ellipsis {
   overflow: hidden;

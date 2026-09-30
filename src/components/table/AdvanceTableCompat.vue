@@ -79,8 +79,10 @@
       :bordered="bordered"
       :show-header="showHeader"
       :table-layout="tableLayout"
-      :row-class-name="rowClassName"
+      :row-class-name="compatRowClassName"
       :custom-row="compatCustomRow"
+      :expanded-row-render="expandedRowRender"
+      :expanded-row-keys="expandedRowKeys"
       :resizable="drag"
       :reorderable="drag"
       :row-index-offset="rowIndexOffset"
@@ -231,7 +233,9 @@ export default {
       pageInfo: { pageStart: 1, pageNums: 10 },
       /** 自动高度：是否固定高度（老壳标题栏里的开关），以及算出来的高度 */
       isFixedHeight: true,
-      autoHeight: 0
+      autoHeight: 0,
+      /** 行拖拽的起点记录 */
+      dragSourceRecord: null
     }
   },
   created() {
@@ -463,7 +467,67 @@ export default {
         this.$emit('dblclick-row', record, index)
       }
 
+      // 行拖拽（老壳行为）：HTML5 draggable + drop 后就地调整数据顺序并发 drop 事件
+      if (this.dragSort) {
+        on.mouseenter = (event) => {
+          if (event && event.target) event.target.draggable = true
+        }
+        on.dragstart = (event) => {
+          if (event && event.stopPropagation) event.stopPropagation()
+          this.dragSourceRecord = record
+        }
+        on.dragover = (event) => {
+          if (event && event.preventDefault) event.preventDefault()
+          const row = event && event.currentTarget
+          if (row && row.style) row.style.background = 'rgba(197, 197, 197, 0.5)'
+        }
+        on.dragleave = (event) => {
+          const row = event && event.currentTarget
+          if (row && row.style) row.style.background = ''
+        }
+        on.drop = (event) => {
+          if (event && event.stopPropagation) event.stopPropagation()
+          const row = event && event.currentTarget
+          if (row && row.style) row.style.background = ''
+          this.moveDraggedRow(record)
+        }
+      }
+
       return Object.assign({}, custom, { on })
+    },
+    /** 把拖拽起点移到目标行所在位置（就地改数组，与老壳一致），并发 drop 事件 */
+    moveDraggedRow(targetRecord) {
+      const source = this.dragSourceRecord
+      if (!source || !targetRecord || source === targetRecord) return
+
+      const keyOf = (item) =>
+        typeof this.rowKey === 'function' ? this.rowKey(item) : item[this.rowKey]
+      const fromIndex = this.dataSource.findIndex((item) => keyOf(item) === keyOf(source))
+      const toIndex = this.dataSource.findIndex((item) => keyOf(item) === keyOf(targetRecord))
+      if (fromIndex < 0 || toIndex < 0) return
+
+      this.dataSource.splice(fromIndex, 1)
+      this.dataSource.splice(toIndex, 0, source)
+      this.dragSourceRecord = null
+
+      this.$emit('drop', source, targetRecord, true)
+      this.$emit('update:dataSource', this.dataSource.slice())
+    },
+    /** 固定底行：最后一行 / 倒数第二行加 class，用 sticky 钉在滚动容器底部 */
+    compatRowClassName(record, index) {
+      const classes = []
+      if (typeof this.rowClassName === 'function') {
+        const extra = this.rowClassName(record, index)
+        if (extra) classes.push(extra)
+      }
+
+      const lastIndex = this.dataSource.length - 1
+      if (this.isFixedBottom && index === lastIndex) classes.push('sgt-fixed-bottom')
+      if (this.isFixedSecondBottom && index === lastIndex - 1) {
+        classes.push('sgt-fixed-second-bottom')
+      }
+
+      return classes.join(' ')
     },
     handleRefresh() {
       this.$emit('refresh')
@@ -644,5 +708,25 @@ export default {
 
 .atc-summary-row .atc-summary-cell.is-first {
   text-align: left;
+}
+
+/* 固定底行：老壳把 tr 设成 sticky，这里改成 td（tr 的 sticky 在部分浏览器不生效），视觉一致 */
+.atc ::v-deep tr.sgt-fixed-bottom > td {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: #c2c2c2;
+}
+
+.atc ::v-deep tr.sgt-fixed-second-bottom > td {
+  position: sticky;
+  bottom: 45px;
+  z-index: 3;
+  background: #c2c2c2;
+}
+
+/* 行拖拽时给出可拖的提示 */
+.atc ::v-deep tr[draggable='true'] {
+  cursor: pointer;
 }
 </style>

@@ -141,4 +141,28 @@ test.describe('兼容壳 AdvanceTableCompat', () => {
     // 分组列「金额信息」跨它的两个子列
     await expect(lastRow.locator('td[colspan="2"]')).toHaveCount(1)
   })
+
+  test('行特性：展开行、行拖拽、固定底行', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '行特性')
+    const dataRows = block.locator('tbody tr.sgt-row')
+
+    // 固定底行：最后一行带 class，且单元格是 sticky
+    await expect(dataRows.last()).toHaveClass(/sgt-fixed-bottom/)
+    await expect(dataRows.last().locator('td').first()).toHaveCSS('position', 'sticky')
+
+    // 展开行
+    await safeClick(dataRows.first().locator('.sgt-expand-btn'))
+    const expandedRow = block.locator('tbody tr.sgt-expanded-row')
+    await expect(expandedRow).toHaveCount(1)
+    await expect(expandedRow).toContainText('订单 SO-01 的备注：尽快发货')
+    await safeClick(dataRows.first().locator('.sgt-expand-btn'))
+    await expect(block.locator('tbody tr.sgt-expanded-row')).toHaveCount(0)
+
+    // 行拖拽：用 Playwright 的 dragTo（它按原生 HTML5 拖拽语义发事件，比手搓 mouse 序列稳）
+    const firstOrder = await dataRows.first().locator('td[data-sgt-key="no"]').textContent()
+    await dataRows.first().dragTo(dataRows.nth(2))
+    await expect(block.locator('.demo-hint')).toContainText('收到 drop')
+    expect(firstOrder).toContain('SO-01')
+  })
 })

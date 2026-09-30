@@ -34,7 +34,7 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 | F6 | 分页透传 + `change` 参数对齐 | ✅ 已完成 |
 | F7 | 自动高度 `isNeedAutoTableHight` | ✅ 已完成 |
 | F8 | 合计行 `summary` | ✅ 已完成 |
-| F9 | 展开行 / 固定底行 / 行拖拽 / 列筛选 | ⬜ |
+| F9 | 展开行 / 固定底行 / 行拖拽（列筛选顺延到下一迭代） | ✅ 部分完成 |
 | F10 | 灰度切换逐页替换 + 度量 | ⬜ |
 | F11 | 移除旧组件与相关依赖 | ⬜ |
 
@@ -341,6 +341,46 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 28. **DOM 注入 vs 真渲染的取舍**：老壳把合计行 `appendChild` 到 `tbody`，好处是不用改表格组件，
     坏处是 Vue 不知道这行存在（更新/排序后会丢）。这里用核心的插槽真渲染，
     视觉与结构都对齐，但 react 式更新也正确。
+
+---
+
+## 迭代 8：F9 行级能力（2026-09-30）✅（列筛选顺延）
+
+**目标**：对齐老壳的 `expandedRowRender` / `dragSort` / `isFixedBottom`。
+
+**做了什么**
+
+- 核心加**展开行**：`expandedRowRender`（行首展开箭头、契约 `(record, index, indent, expanded, h)`）、
+  `expandedRowKeys` 受控 / 内部维护、`expand` 与 `expandedRowsChange` 事件；
+  展开内容用新的 `ContentRenderer` 函数式组件统一渲染 VNode / 字符串 / 数组
+- 兼容壳：`dragSort`（HTML5 拖拽，**就地改数据顺序**并发 `drop(source, target, isDrop)`，
+  另外发 `update:dataSource`）、`isFixedBottom` / `isFixedSecondBottom`
+  （`compatRowClassName` 给最后一行 / 倒数第二行加 class，sticky 钉底）、
+  `expandedRowRender` / `expandedRowKeys` 透传
+- 新增「兼容壳：展开行 / 行拖拽 / 固定底行」章节与示例；E2E 新增 1 条 × 桌面/手机
+
+**验证**
+
+- `pnpm test`：**81 项全绿**（本迭代未新增纯逻辑）
+- `pnpm test:e2e`：**72 条全绿**（70 → 72）
+- `pnpm build`：通过
+- 关键结论：展开行点开/收起正常、内容按契约渲染；固定底行最后一行 class 为 `sgt-fixed-bottom`
+  且单元格 `position: sticky`；行拖拽后 `drop` 事件被触发
+
+### 这一段踩的坑
+
+29. **E2E 的 flake：单独跑过、整文件跑挂**。行拖拽最初用手搓的
+    `hover → mouse.down → hover → mouse.up`，在整文件并发跑时会偶发失败（HTML5 原生拖拽需要
+    浏览器识别出真正的拖拽手势）。→ 改用 Playwright 的 `dragTo()`（内部按原生拖拽语义发事件），
+    连跑两次都稳定。**教训：能交给框架的交互就别手搓**。
+30. **老壳把 sticky 设在 `tr` 上，浏览器支持不一致**（部分引擎对 `tr` 的 sticky 无效）。
+    → 我们把 sticky 放在 `td` 上，视觉一致但真的生效，README 里注明了这处刻意差异。
+
+### 顺延的部分
+
+**列筛选 `filters`（30 个文件）** 顺延到下一迭代：它需要表头的筛选下拉（多选/单选）、
+`filteredValue` 受控语义、以及 `onFilter` 客户端过滤 / `change` 服务端过滤两条路径，
+值得单独一份计划与用例，不赶在今天糊过去。
 
 ---
 
