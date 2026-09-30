@@ -13,6 +13,12 @@ export const propsTable = {
     ['tableLayout', 'String', "'auto'", "透传给 <table> 的 table-layout"],
     ['rowClassName', 'Function', 'null', '(record, index) => string，追加到行 class'],
     ['customRow', 'Function', 'null', '(record, index) => ({ on: { click } })，与 antd 一致'],
+    [
+      'sortedInfo',
+      '{ columnKey, order } | null',
+      'null',
+      '排序状态；传了 = 受控（自己在 sort-change 里写回），不传由组件内部维护'
+    ],
     ['resizable', 'Boolean', 'false', '开启表头拖宽（列上写 resizable: false 可单独关掉某一列）'],
     ['reorderable', 'Boolean', 'false', '开启拖动表头调整列顺序'],
     ['minColumnWidth', 'Number', '60', '拖宽时的最小列宽'],
@@ -35,6 +41,13 @@ export const columnTable = {
     ['scopedSlots', 'Object', "{ customRender: 'slotName' }，用作用域插槽渲染该列"],
     ['merge', 'Boolean | Function', 'true = 相邻行同值纵向合并；函数形式 (record, prevRecord, index, prevIndex) => Boolean'],
     ['editable', 'Boolean | Object', '可编辑单元格，见下方 editable 子字段'],
+    ['sorter', 'Boolean | Function', 'true 按 dataIndex 比较；函数形式 (a, b) => number 用自己的规则'],
+    [
+      'sortDirections',
+      "Array<'ascend' | 'descend'>",
+      "点击表头时循环的方向，默认 ['ascend', 'descend']"
+    ],
+    ['defaultSortOrder', "'ascend' | 'descend'", '初始排序方向（没有受控 sortedInfo 时生效）'],
     ['resizable', 'Boolean', '单列关掉拖宽（默认跟随表级 resizable）'],
     ['reorderable', 'Boolean', '单列关掉拖顺序（默认跟随表级 reorderable）']
   ]
@@ -76,10 +89,20 @@ export const eventsTable = {
   rows: [
     [
       'cell-change',
-      '{ value, oldValue, record, dataIndex, rowIndex, column, mergedRowIndexes, dataSource }',
-      '单元格提交后触发；合并格会带上整组行下标'
+      '{ value, oldValue, record, dataIndex, rowIndex, column, mergedRowIndexes, originalRowIndexes, dataSource }',
+      '单元格提交后触发；合并格带上整组显示下标，originalRowIndexes 是写回父数组的原始下标'
     ],
     ['update:dataSource', 'Array', '不可变的新数组，配合 :data-source.sync 一行接住'],
+    [
+      'sort-change',
+      '{ columnKey, order, column, dataSource }',
+      '点击表头改变排序时触发；dataSource 仍是父组件的原始顺序，组件不会改它'
+    ],
+    [
+      'update:sortedInfo',
+      '{ columnKey, order }',
+      '与 sort-change 同时触发，配合 :sorted-info.sync 使用'
+    ],
     [
       'column-resize',
       '{ key, width, columns }',

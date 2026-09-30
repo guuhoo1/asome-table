@@ -2,7 +2,7 @@
 
 把原 HTML demo 的「方案一：横向滚动 + 两行分组表头 + 滚动阴影」封装成的 Vue 2 组件，
 另外支持**左侧列冻结**（原 demo 的方案三）、**合并单元格**、**可编辑单元格**、
-**列宽拖拽**和**列顺序拖拽**。props 命名与语义对齐
+**行排序**、**列宽拖拽**和**列顺序拖拽**。props 命名与语义对齐
 ant-design-vue 1.x 的 `TableProps` / `TableRowSelection`，列定义使用 antd 的 `children` 嵌套结构。
 
 ## 运行
@@ -174,6 +174,41 @@ Esc 取消，`select` 选完即提交。校验失败时编辑器不退出、错�
 合并列被编辑时 `mergedRowIndexes` 是整组的下标（值会写回整组，否则按值合并会立刻裂开）。
 点可编辑单元格不会冒泡到 `customRow` 的行点击上，所以「点行切换勾选」不会和进入编辑打架。
 
+## 行排序
+
+列上写 `sorter` 就能点表头排序：
+
+```js
+{ title: '数量', dataIndex: 'qty', sorter: true }                    // 按 dataIndex 比较
+{ title: '客户', dataIndex: 'customer', sorter: (a, b) => number }   // 自定义比较函数
+{ title: '数量', dataIndex: 'qty', sorter: true,
+  sortDirections: ['ascend', 'descend'], defaultSortOrder: 'descend' }
+```
+
+点击表头按「升序 → 降序 → 取消」循环，表头显示升降箭头并带 `aria-sort`。规则：空值
+（`''` / `null` / `undefined`）**永远排最后**，升序降序都一样；相同值维持数据原本的相对顺序（稳定排序）。
+
+排序状态默认由组件内部维护；传 `sortedInfo` 就是受控模式，自己在事件里写回：
+
+```vue
+<scroll-group-table
+  :columns="columns"
+  :data-source="rows"
+  row-key="no"
+  :sorted-info.sync="sortedInfo"
+  @sort-change="onSort"
+/>
+```
+
+```js
+onSort({ columnKey, order, column, dataSource }) {}   // dataSource 仍是父组件的原始顺序
+```
+
+排序只影响**显示顺序**，组件不会改动你传入的 `dataSource`。由此带来三件事：合并单元格的跨度按新的
+显示顺序重算；排序状态下编辑某一格时，改动会按 record 定位写回**父数组的原始下标**（父数组顺序不会
+被打乱，`cell-change` 里额外给出 `originalRowIndexes`）；勾选按 rowKey 记录，不受排序影响。
+另外，拖完表头换位或拖宽后紧跟的那次 click 会被忽略，所以「拖列」不会误触发排序。
+
 ## 列宽拖拽 / 列顺序拖拽
 
 两个表级开关，默认都关，互不影响：
@@ -218,7 +253,9 @@ onReorder({ key, containerKey, fromIndex, toIndex, columns }) {}  // containerKe
   在视觉上等价于原 demo 的 `max-height`。
 - 表格是 `width: max-content` + `min-width: 100%`：内容比容器窄时表格会撑满（多出来的宽度按列
   分摊），内容更宽时照常横向滚动，不会在右边留一大片空白。
-- 不做分页、排序、筛选、`expandedRowRender`、`selections` 下拉自定义选择项、右侧冻结与
+- 不做分页、筛选、`expandedRowRender`、`selections` 下拉自定义选择项、右侧冻结与
   卡片化/列优先级隐藏（方案二/四）。
 - 内置渲染：`status` 列自动套用 4 色徽章，空值统一显示 `-`；两者都会被 `customRender` /
   作用域插槽覆盖。
+- 比 a-table 多出来的能力：合并单元格 `merge`、可编辑单元格 `editable`（含 date/datetime 与
+  `rules`）、行排序 `sorter`、列宽拖拽 `resizable`、列顺序拖拽 `reorderable`。

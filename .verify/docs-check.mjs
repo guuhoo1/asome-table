@@ -760,6 +760,8 @@ await captureCard(frozenShot, 'docs-frozen.png')
 await captureCard(await cardRect('拖动表头改列宽'), 'docs-resize.png')
 await captureCard(await cardRect('拖动表头换位置'), 'docs-reorder.png')
 await captureCard(await cardRect('单行表头也能拖'), 'docs-reorder-flat.png')
+await captureCard(await cardRect('点表头排序'), 'docs-sort.png')
+await captureCard(await cardRect('排序与合并共存'), 'docs-sort-merge.png')
 
 console.log(
   'report written to .verify/docs-report.json\n' +
