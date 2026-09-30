@@ -260,6 +260,15 @@
           >
             <sort-demo />
           </demo-block>
+
+          <demo-block
+            anchor="demo-sort-merge"
+            title="排序与合并共存"
+            description="点「数量」升序：原来合并的「华东」两行会被打散，而「华南」两行会重新合并成一组——合并范围永远是按当前显示顺序重算的。"
+            :source="sortMergeSource"
+          >
+            <sort-merge-demo />
+          </demo-block>
         </section>
 
         <section id="diff" class="docs-section">
@@ -318,6 +327,7 @@ import ReorderDemo from './demos/ReorderDemo.vue'
 import ReorderFlatDemo from './demos/ReorderFlatDemo.vue'
 import ReorderResizeDemo from './demos/ReorderResizeDemo.vue'
 import SortDemo from './demos/SortDemo.vue'
+import SortMergeDemo from './demos/SortMergeDemo.vue'
 import {
   columnTable,
   editableTable,
@@ -341,6 +351,7 @@ import reorderSource from './demos/ReorderDemo.vue?raw'
 import reorderFlatSource from './demos/ReorderFlatDemo.vue?raw'
 import reorderResizeSource from './demos/ReorderResizeDemo.vue?raw'
 import sortSource from './demos/SortDemo.vue?raw'
+import sortMergeSource from './demos/SortMergeDemo.vue?raw'
 
 const INSTALL_SOURCE = [
   '<!-- 1. 模板里直接用 -->',
@@ -392,7 +403,8 @@ export default {
     ReorderDemo,
     ReorderFlatDemo,
     ReorderResizeDemo,
-    SortDemo
+    SortDemo,
+    SortMergeDemo
   },
   data() {
     return {
@@ -411,6 +423,7 @@ export default {
       reorderFlatSource,
       reorderResizeSource,
       sortSource,
+      sortMergeSource,
       propsTable,
       columnTable,
       editableTable,

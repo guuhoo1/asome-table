@@ -433,6 +433,79 @@ const sorting = await evaluate(async () => {
   return { before, ascend, descend, cancelled, emptyLast }
 })
 
+// 排序 + 合并：合并范围按当前显示顺序重算
+const sortingWithMerge = await evaluate(async () => {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const block = [...document.querySelectorAll('.demo-block')].find((node) =>
+    node.textContent.includes('合并范围会跟着新顺序重算')
+  )
+  if (!block) return null
+
+  const scroll = block.querySelector('.sgt-scroll')
+  const rows = () => [...scroll.querySelectorAll('tbody tr.sgt-row')]
+  const deptSpans = () =>
+    rows().map((row) => {
+      const cell = row.querySelector('td[data-sgt-key="dept"]')
+      return cell ? 'span=' + (cell.getAttribute('rowspan') || 1) : 'skipped'
+    })
+  const order = () =>
+    rows().map((row) => row.querySelector('td[data-sgt-key="no"]').textContent.trim())
+  const header = (key) => scroll.querySelector('thead [data-sgt-header-key="' + key + '"]')
+
+  const before = deptSpans()
+  header('qty').click()
+  await wait(220)
+
+  return { before, afterOrder: order(), afterAscend: deptSpans() }
+})
+
+// 排序 + 编辑：编辑写回父数组的原始位置，父数组顺序不被打乱
+const sortingWithEdit = await evaluate(async () => {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const block = [...document.querySelectorAll('.demo-block')].find((node) =>
+    node.textContent.includes('点表头排序')
+  )
+  if (!block) return null
+
+  const scroll = block.querySelector('.sgt-scroll')
+  const header = (key) => scroll.querySelector('thead [data-sgt-header-key="' + key + '"]')
+  const rowOrder = () =>
+    [...scroll.querySelectorAll('tbody tr.sgt-row')].map((row) =>
+      row.querySelector('td[data-sgt-key="no"]').textContent.trim()
+    )
+  const cellOf = (no, key) =>
+    [...scroll.querySelectorAll('tbody tr.sgt-row')]
+      .find((row) => row.querySelector('td[data-sgt-key="no"]').textContent.trim() === no)
+      .querySelector('td[data-sgt-key="' + key + '"]')
+  const orderText = () => {
+    const matched = /数据顺序：([^｜\s]*)/.exec(block.querySelector('.demo-hint').textContent)
+    return matched ? matched[1] : null
+  }
+
+  // 先按「客户」升序，让显示顺序与原始顺序不同
+  header('customer').click()
+  await wait(220)
+  const sortedView = rowOrder()
+  const orderBeforeEdit = orderText()
+
+  // 排序状态下编辑第一行的客户
+  const targetNo = sortedView[0]
+  cellOf(targetNo, 'customer').click()
+  await wait(150)
+  const input = scroll.querySelector('.sgt-editor')
+  input.value = '测试改名'
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }))
+  await wait(300)
+
+  return {
+    sortedView,
+    orderBeforeEdit,
+    orderAfterEdit: orderText(),
+    editedCellText: cellOf(targetNo, 'customer').textContent.trim()
+  }
+})
+
 // 单行表头（无分组）的拖顺序：能拖、单列开关生效、冻结列拖不出去
 const flatReordering = await evaluate(async () => {
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -701,6 +774,8 @@ console.log(
       reordering,
       flatReordering,
       sorting,
+      sortingWithMerge,
+      sortingWithEdit,
       realMouseDrag,
       widths: geometry.map((item) => `${item.title}: 表 ${item.tableWidth} / 容器 ${item.containerWidth} / 空白 ${item.blankSpace}`),
       consoleMessages
@@ -710,7 +785,18 @@ console.log(
 writeFileSync(
   new URL('./docs-report.json', import.meta.url),
   JSON.stringify(
-    { docs, geometry, alignment, resizing, reordering, flatReordering, sorting, consoleMessages },
+    {
+      docs,
+      geometry,
+      alignment,
+      resizing,
+      reordering,
+      flatReordering,
+      sorting,
+      sortingWithMerge,
+      sortingWithEdit,
+      consoleMessages
+    },
     null,
     2
   )
