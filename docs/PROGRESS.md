@@ -386,6 +386,44 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 
 ## 累积风险与待办（跨迭代）
 
+### 尚未完成清单（2026-09-30 盘点，按证据核过代码）
+
+与迁移直接相关的功能缺口：
+
+| 项 | 老壳用量 | 现状 |
+| --- | --- | --- |
+| 列筛选 `filters` | 30 个文件 | 未做（F9 顺延）：缺筛选下拉、`filteredValue` 受控、`onFilter` / `change` 两条过滤路径 |
+| 表头自动搜索区（SearchArea） | `formatConditions` 3 个文件 | 只留了 `#search` 插槽；「按列配置自动生成搜索表单」未做 |
+| 自动 `scroll.x` 算法 | 全量 | 老壳是「叶子列宽和 +（有冻结列 ? 100 : 300）」，我们用 `max-content`，视觉通常等价但非像素级复刻 |
+| `size: 'small'` 密度 | 167 个文件 | 老壳用 antd small 的行高/内边距，我们是固定 42px，**像素级有细微差异**，试点需逐页比对 |
+| 树形数据 / 展开图标定制 | `childrenColumnName` `expandIcon` `expandRowByClick` `defaultExpandAllRows` `indentSize` `expandIconAsCell` `expandIconColumnIndex` | 声明接受但无行为 |
+| `customHeaderRow` / `transformCellText` / `getPopupContainer` / `footer` | 低频 | 声明接受但无行为 |
+| F10 搬进 vela-pc | — | 未开始（拷贝组件 + 别名 + 灰度 + 逐页替换） |
+| F11 移除旧壳与依赖 | 513 个文件 | 未开始 |
+
+**不需要做**：`selectedRows` / `selectedRowChange` / `clearSelectedRowKeys` / `columnDragSort`
+——这四个 prop 在老壳里也没被真正使用（死 prop），保持「声明接受」即可。
+
+工程收尾（提过未做）：GitHub Actions CI（单测 + 构建 + E2E）、`.gitattributes`（统一换行符）、
+LICENSE、是否做成 npm 包（目前是拷源码集成）。
+
+与本次迁移无关的自家 backlog：**批量保存**（表级 `editMode: 'batch'` + 草稿层 + 保存前整体校验定位）——
+老壳没有这个能力，不影响无缝迁移。
+
+### 刻意与老壳不同的地方（不是遗漏，是已知差异）
+
+1. `isSerialNumber` + `formatter` 同时出现时：老壳传 `record[undefined]`（NaN），我们传**序号**
+2. 自动高度：老壳不监听窗口 resize，我们补上了
+3. 固定底行：老壳 sticky 设在 `tr`（部分浏览器无效），我们设在 `td`
+4. 合计行：老壳 `appendChild` 注入 DOM，我们插槽真渲染
+5. 列显隐的 `reset` 事件：老壳是死代码，我们补上了
+6. 行拖拽：老壳就地改数组，我们同样就地改，并额外发 `update:dataSource`
+
+### 建议的推进顺序
+
+① 列筛选 → ② 表头搜索区 + 自动 `scroll.x` + `size` 密度对齐（"无缝"最后的像素级差距）
+→ ③ F10 搬进 vela-pc 试点（先出改动清单）→ ④ CI / `.gitattributes` 等收尾。
+
 ### 下次继续的入口（2026-09-30 收工）
 
 - 路线图进度：**F1–F8 完成，F9 完成「展开行 / 行拖拽 / 固定底行」**（都已推到 `origin/main`）；
