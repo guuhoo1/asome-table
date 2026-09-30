@@ -48,7 +48,7 @@
   - `serialNumberOf(index, offset = 0)`
   - `resolveDisplayValue(record, column, index)`（串起 formatter / 序号 / 深路径 / 普通取值）
 
-- [ ] **Step 1: 先写失败的测试**
+- [x] **Step 1: 先写失败的测试**
 
 ```js
 import test from 'node:test'
@@ -100,12 +100,12 @@ test('serialNumberOf 从 1 开始，可带分页偏移', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm test`
 Expected: FAIL —— `Cannot find module '../src/components/table/columnValue.js'`
 
-- [ ] **Step 3: 写最小实现**
+- [x] **Step 3: 写最小实现**
 
 ```js
 /**
@@ -148,12 +148,12 @@ export function resolveDisplayValue(record, column, index) {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm test`
 Expected: PASS —— 总数 56 → 60（新增 4 项）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add src/components/table/columnValue.js tests/columnValue.test.js
@@ -171,7 +171,7 @@ git commit -m "feat: 列取值与格式化纯逻辑（formatter / isSubObj / isS
 - Consumes: Task 1 的纯函数；组件列字段 `ellipsis` / `formatter` / `isSubObj` / `isSerialNumber`（Task 3 实现）
 - Produces: 可复用的示例与断言
 
-- [ ] **Step 1: 写示例（四种列约定 + 省略号）**
+- [x] **Step 1: 写示例（四种列约定 + 省略号）**
 
 ```vue
 <template>
@@ -223,7 +223,7 @@ export default {
 </script>
 ```
 
-- [ ] **Step 2: 写 Playwright 断言**
+- [x] **Step 2: 写 Playwright 断言**
 
 ```js
 import { test, expect } from '@playwright/test'
@@ -258,12 +258,12 @@ test.describe('列级兼容', () => {
 })
 ```
 
-- [ ] **Step 3: 跑断言确认失败**
+- [x] **Step 3: 跑断言确认失败**
 
 Run: `pnpm build` 然后 `pnpm exec playwright test e2e/column-compat.spec.js`
 Expected: FAIL —— 序号列与金额列显示的是原始值（组件还没接这些列字段）
 
-- [ ] **Step 4: 提交**
+- [x] **Step 4: 提交**
 
 ```bash
 git add src/docs/demos/ColumnCompatDemo.vue src/docs/DocsApp.vue e2e/column-compat.spec.js
@@ -279,7 +279,7 @@ git commit -m "test: 列级兼容示例与 E2E 断言（先失败）"
 - Consumes: `resolveDisplayValue`（Task 1）
 - Produces: 列字段 `ellipsis` / `formatter` / `isSubObj` / `isSerialNumber`；单元格 class `sgt-cell--ellipsis`
 
-- [ ] **Step 1: `createLeaf` 带上四个字段**
+- [x] **Step 1: `createLeaf` 带上四个字段**
 
 ```js
 ellipsis: column.ellipsis === true,
@@ -288,7 +288,7 @@ isSubObj: column.isSubObj === true,
 isSerialNumber: column.isSerialNumber === true,
 ```
 
-- [ ] **Step 2: 显示文本统一走 `resolveDisplayValue`**
+- [x] **Step 2: 显示文本统一走 `resolveDisplayValue`**
 
 ```js
 displayText(leaf, record, index) {
@@ -301,7 +301,7 @@ displayText(leaf, record, index) {
 模板里所有 `displayText(leaf, record)` 改成 `displayText(leaf, record, index)`；
 作用域插槽的 `:text` 同步改成格式化后的值（与老实现一致）。
 
-- [ ] **Step 3: 单元格加省略号与 title**
+- [x] **Step 3: 单元格加省略号与 title**
 
 单元格 `<td>` 的 class 增加 `{ 'sgt-cell--ellipsis': leaf.ellipsis }`，
 并加属性 `:title="leaf.ellipsis ? displayText(leaf, record, index) : null"`。
@@ -321,12 +321,12 @@ displayText(leaf, record, index) {
 if (leaf.ellipsis && width) style.maxWidth = width + 'px'
 ```
 
-- [ ] **Step 4: 跑 E2E 确认转绿**
+- [x] **Step 4: 跑 E2E 确认转绿**
 
 Run: `pnpm test:e2e`
 Expected: PASS —— 新增 3 条 × 2 project 全绿，原有 46 条不变
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add src/components/ScrollGroupTable.vue
@@ -340,7 +340,7 @@ git commit -m "feat: 列级兼容（ellipsis / formatter / isSubObj / isSerialNu
 - Modify: `README.md`（新增「列级兼容」小节）
 - Modify: `docs/PROGRESS.md`（填「迭代 2」）
 
-- [ ] **Step 1: 补 API 表**
+- [x] **Step 1: 补 API 表**
 
 ```js
 ['ellipsis', 'Boolean', '超出列宽时截断内容并补 title（配合 width 生效）'],
@@ -349,16 +349,16 @@ git commit -m "feat: 列级兼容（ellipsis / formatter / isSubObj / isSerialNu
 ['isSerialNumber', 'Boolean', '渲染行号（从 1 开始），不取数据字段'],
 ```
 
-- [ ] **Step 2: README 增加「列级兼容」小节**
+- [x] **Step 2: README 增加「列级兼容」小节**
 
 说明四个字段语义、优先级（`formatter` > 序号 > `isSubObj` > 普通取值），
 以及「插槽拿到的 `text` 也是格式化后的值」这一点，并给出迁移提示。
 
-- [ ] **Step 3: 追加 `docs/PROGRESS.md` 的迭代 2**
+- [x] **Step 3: 追加 `docs/PROGRESS.md` 的迭代 2**
 
 填：做了什么、验证命令与结果、这一段踩到的坑（现象 → 根因 → 修法）。
 
-- [ ] **Step 4: 提交**
+- [x] **Step 4: 提交**
 
 ```bash
 git add src/docs/api.js README.md docs/PROGRESS.md

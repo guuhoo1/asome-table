@@ -216,6 +216,28 @@ Esc 取消，`select` 选完即提交。校验失败时编辑器不退出、错�
 合并列被编辑时 `mergedRowIndexes` 是整组的下标（值会写回整组，否则按值合并会立刻裂开）。
 点可编辑单元格不会冒泡到 `customRow` 的行点击上，所以「点行切换勾选」不会和进入编辑打架。
 
+## 列级兼容（从 AdvanceTable 迁移）
+
+vela-pc 老壳 `AdvanceTable` 的三条列约定可以直接用了，配合 antd 的 `ellipsis`：
+
+```js
+{ title: '序号', key: 'serial', width: 70, isSerialNumber: true }        // 行号，不取数据
+{ title: '金额', dataIndex: 'amount', formatter: (v) => '¥' + v }        // 格式化
+{ title: '客户', dataIndex: 'customer.name', isSubObj: true }            // 点号路径深层取值
+{ title: '备注', dataIndex: 'remark', width: 140, ellipsis: true }       // 超宽截断 + title
+```
+
+取值优先级与老实现一致：`formatter` 最优先 → 序号列 → `isSubObj` 深路径 → `dataIndex`（缺省回退 `key`）。
+两点注意：
+
+1. **作用域插槽与 `customRender` 拿到的 `text` 是格式化后的值**（老壳就是这么传的），
+   所以存量页面的插槽渲染不会出现差异。
+2. `ellipsis` 需要列上声明 `width` 才会真正截断（组件会给单元格加 `max-width`），
+   截断时同时写入 `title`，鼠标悬停能看到完整内容。
+
+一处刻意与老实现不同的地方：**序号列同时配了 `formatter` 时，传给 `formatter` 的是序号**，
+而老实现会传 `record[undefined]`（结果是 `NaN`）——这种组合本身没有意义，按更合理的行为处理。
+
 ## 行排序
 
 列上写 `sorter` 就能点表头排序：

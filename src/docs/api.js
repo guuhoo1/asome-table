@@ -48,6 +48,10 @@ export const columnTable = {
       "点击表头时循环的方向，默认 ['ascend', 'descend']"
     ],
     ['defaultSortOrder', "'ascend' | 'descend'", '初始排序方向（没有受控 sortedInfo 时生效）'],
+    ['ellipsis', 'Boolean', '超出列宽时截断内容并补 title（配合列上的 width 生效）'],
+    ['formatter', 'Function', '(value, record, index) => any，老壳的格式化函数，优先级高于直接取值'],
+    ['isSubObj', 'Boolean', 'dataIndex 按点号路径深层取值，例如 customer.name'],
+    ['isSerialNumber', 'Boolean', '渲染行号（从 1 开始，不取数据字段）'],
     ['resizable', 'Boolean', '单列关掉拖宽（默认跟随表级 resizable）'],
     ['reorderable', 'Boolean', '单列关掉拖顺序（默认跟随表级 reorderable）']
   ]

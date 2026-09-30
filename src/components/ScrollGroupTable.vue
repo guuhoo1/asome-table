@@ -213,12 +213,14 @@
                 class="sgt-cell"
                 :class="[
                   cellClasses(leaf),
+                  { 'sgt-cell--ellipsis': leaf.ellipsis },
                   {
                     'is-span-selected': isSpanSelected(leaf, index),
                     'is-editing': isEditing(leaf, index)
                   }
                 ]"
                 :style="cellStyle(leaf)"
+                :title="leaf.ellipsis ? displayText(leaf, record, index) : null"
                 :data-sgt-key="leaf.key"
                 :rowspan="mergeRowSpan(leaf, index)"
                 @click="handleCellClick(leaf, record, index, $event)"
@@ -253,25 +255,25 @@
                 <template v-else-if="leaf.slotName">
                   <slot
                     :name="leaf.slotName"
-                    :text="displayText(leaf, record)"
+                    :text="displayText(leaf, record, index)"
                     :record="record"
                     :index="index"
                     :column="leaf"
-                  >{{ displayText(leaf, record) }}</slot>
+                  >{{ displayText(leaf, record, index) }}</slot>
                 </template>
                 <cell-renderer
                   v-else-if="typeof leaf.customRender === 'function'"
                   :column="leaf"
                   :record="record"
                   :index="index"
-                  :text="displayText(leaf, record)"
+                  :text="displayText(leaf, record, index)"
                 />
                 <span
-                  v-else-if="isStatusColumn(leaf) && displayText(leaf, record) !== emptyText"
+                  v-else-if="isStatusColumn(leaf) && displayText(leaf, record, index) !== emptyText"
                   class="sgt-badge"
-                  :class="statusBadgeClass(leaf, record)"
-                >{{ displayText(leaf, record) }}</span>
-                <template v-else>{{ displayText(leaf, record) }}</template>
+                  :class="statusBadgeClass(displayText(leaf, record, index))"
+                >{{ displayText(leaf, record, index) }}</span>
+                <template v-else>{{ displayText(leaf, record, index) }}</template>
               </td>
             </tr>
           </template>
@@ -328,6 +330,7 @@ import {
   sameKeyOrder
 } from './table/columnLayout.js'
 import { fromEditorValue, toEditorValue } from './table/editorValue.js'
+import { resolveDisplayValue } from './table/columnValue.js'
 import {
   SORT_ASCEND,
   SORT_DESCEND,
@@ -700,7 +703,13 @@ export default {
         // 行排序：sorter 为 true 按 dataIndex 比较，为函数时用自定义比较
         sorter: column.sorter || null,
         sortDirections: column.sortDirections || null,
-        defaultSortOrder: column.defaultSortOrder || null
+        defaultSortOrder: column.defaultSortOrder || null,
+        // 列级兼容：老壳（AdvanceTable）的列约定 + antd 的 ellipsis
+        ellipsis: column.ellipsis === true,
+        formatter: typeof column.formatter === 'function' ? column.formatter : null,
+        isSubObj: column.isSubObj === true,
+        isSerialNumber: column.isSerialNumber === true,
+        serialNumberOffset: column.serialNumberOffset || 0
       }
     },
     toNumber(value) {
@@ -743,6 +752,8 @@ export default {
       if (width) {
         style.minWidth = width + 'px'
         if (this.effectiveTableLayout === 'fixed') style.width = width + 'px'
+        // 开了 ellipsis 的列需要 max-width 才真能截断
+        if (leaf.ellipsis) style.maxWidth = width + 'px'
       }
       if (leaf.fixed === 'left') {
         const offset = this.leftOffsets.map[leaf.key]
@@ -759,11 +770,14 @@ export default {
     isRowDisabled(record, index) {
       return isRowDisabledByProps(this.rowSelection, record, index)
     },
-    displayText(leaf, record) {
-      const field = leaf.dataIndex || leaf.key
-      const raw = record[field]
-      if (raw === '' || raw === null || raw === undefined) return EMPTY_TEXT
-      return raw
+    /**
+     * 单元格显示文本：formatter / 序号列 / isSubObj 深路径 / 普通取值，最后统一兜底占位符。
+     * 作用域插槽与 customRender 拿到的 text 也是这份值（与老壳行为一致）。
+     */
+    displayText(leaf, record, index) {
+      const value = resolveDisplayValue(record, leaf, index)
+      if (value === '' || value === null || value === undefined) return EMPTY_TEXT
+      return value
     },
     isMergedAway(leaf, rowIndex) {
       return isMergedAwayInPlan(this.mergePlan, leaf.key, rowIndex)
@@ -1093,9 +1107,8 @@ export default {
     isStatusColumn(leaf) {
       return leaf.key === STATUS_KEY || leaf.dataIndex === STATUS_KEY
     },
-    statusBadgeClass(leaf, record) {
-      const field = leaf.dataIndex || leaf.key
-      return STATUS_BADGE_MAP[record[field]] || 'sgt-badge-gray'
+    statusBadgeClass(text) {
+      return STATUS_BADGE_MAP[text] || 'sgt-badge-gray'
     },
     rowClasses(record, index) {
       const classes = []
@@ -1549,6 +1562,12 @@ body.sgt-dragging {
 }
 
 /* ---------- 行排序 ---------- */
+.sgt-table td.sgt-cell--ellipsis,
+.sgt-table th.sgt-cell--ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sgt-table thead th.sgt-sortable {
   cursor: pointer;
 }

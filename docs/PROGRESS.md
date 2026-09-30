@@ -25,7 +25,7 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 | # | 内容 | 状态 |
 | --- | --- | --- |
 | F1 | 行排序 `sorter` | ✅ 已完成并合并（2026-09-30） |
-| F2 | 列级兼容：`ellipsis` / `formatter` / `isSubObj` / `isSerialNumber` | 🚧 进行中 |
+| F2 | 列级兼容：`ellipsis` / `formatter` / `isSubObj` / `isSerialNumber` | ✅ 已完成（待合并） |
 | F3 | 兼容壳 `AdvanceTableCompat`（标题栏/刷新/列配置/选中提示条/默认居中） | ⬜ |
 | F4 | 列宽持久化（复刻 localStorage key） | ⬜ |
 | F5 | 列显隐 + 持久化 | ⬜ |
@@ -112,7 +112,7 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 
 ---
 
-## 迭代 2：F2 列级兼容（2026-09-30）🚧
+## 迭代 2：F2 列级兼容（2026-09-30）✅
 
 **目标**：让 vela-pc 存量页面的**列定义**能直接搬到新组件上——支持 `ellipsis`（73 个文件）、
 `formatter`（104）、`isSubObj`（29）、`isSerialNumber`（31）。默认居中 `align`（542）属于壳层约定，
@@ -122,15 +122,35 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 
 **做了什么**（随进度更新）
 
-- 待填
+- `src/components/table/columnValue.js`：`readDeepValue`（点号路径）、`resolveColumnValue`、
+  `serialNumberOf`、`resolveDisplayValue`，配 5 项单测
+- 组件接线：`createLeaf` 带上 `ellipsis` / `formatter` / `isSubObj` / `isSerialNumber`；
+  单元格文本统一走 `resolveDisplayValue`，作用域插槽与 `customRender` 拿到的 `text` 也是格式化后的值
+- 徽章配色改为按「显示文本」映射（原先直接读 `record[field]`，与 formatter / isSubObj 不一致）
+- `ellipsis` 支持：单元格加 `sgt-cell--ellipsis`（`overflow: hidden` + `text-overflow: ellipsis`）、
+  写入 `title`、并在 `cellStyle` 里补 `max-width`（否则 auto 布局下不会真正截断）
+- 文档站新增「列级兼容」章节与示例，API 表补 4 行，README 补一小节
+- E2E：`e2e/column-compat.spec.js` 3 条 × 桌面/手机
 
 **验证**（随进度更新）
 
-- 待填
+- `pnpm test`：**61 项全绿**（56 → 61，新增 5 项）
+- `pnpm test:e2e`：**52 条全绿**（46 → 52，新增 3 条 × 2 project）
+- `pnpm build`：通过
+- 关键结论：序号 `1/2/3`、`formatter` 输出 `¥299`、深路径取到 `customer.name` / `customer.tag.label`、
+  `ellipsis` 单元格 `text-overflow: ellipsis` 且带 `title`；**原有 46 条用例一条没改**，
+  即「不写这些字段的列行为完全不变」
 
 ### 这一段踩的坑
 
-- 待填
+14. **单测抓到一处语义问题**：`isSerialNumber` 列若同时配 `formatter`，按老实现会把
+    `record[undefined]` 传给 formatter（结果是 `NaN`）。这种组合本身没意义，改成把**序号**传给
+    formatter，并在 README 里标注这是刻意偏离老实现的地方。
+15. **新增章节后文档站结构断言失败**：`e2e/docs.spec.js` 里硬编码了导航项 / 章节 id / 示例卡片数量
+    （14 / 13），加一节新内容就会红。→ 更新期望值，并提醒：以后加章节记得同步这条断言
+    （反过来说，这条断言也确实防住了「忘记注册章节」这类错误）。
+16. **徽章配色与列约定不一致**：`statusBadgeClass` 原先直接读 `record[dataIndex]`，
+    如果状态列用了 `isSubObj` 或 `formatter` 就会取错。→ 改成按「显示文本」映射，三处渲染口径统一。
 
 ---
 
