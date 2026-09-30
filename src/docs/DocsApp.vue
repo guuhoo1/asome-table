@@ -292,6 +292,25 @@
           </demo-block>
         </section>
 
+        <section id="advance-compat" class="docs-section">
+          <h2 class="docs-h2">兼容壳：AdvanceTableCompat</h2>
+          <p class="docs-p">
+            给 vela-pc 的存量页面准备的兼容层：它把老壳 <code class="docs-inline-code">AdvanceTable</code>
+            的对外契约翻译成核心组件的 API——列上没写 <code class="docs-inline-code">align</code> 时默认居中、
+            每列自动挂一个以列 key 命名的作用域插槽（页面里写
+            <code class="docs-inline-code">&lt;template #customer&gt;</code> 即可覆盖渲染）、
+            标题栏与刷新按钮、选中提示条与清空、列宽与列序拖拽默认开启。
+          </p>
+          <demo-block
+            anchor="demo-advance-compat"
+            title="兼容壳：标题栏 / 默认居中 / 列名插槽 / 选中提示条"
+            description="点「刷新」会发 refresh 事件、勾选行会出现「已选择 N 条 + 清空」、双击行会发 dblclickRow；「客户」列被页面的 #customer 插槽覆盖成「序号. 客户名」。"
+            :source="advanceCompatSource"
+          >
+            <advance-compat-demo />
+          </demo-block>
+        </section>
+
         <section id="diff" class="docs-section">
           <h2 class="docs-h2">与 a-table 的差异</h2>
           <ul class="docs-list">
@@ -350,6 +369,7 @@ import ReorderResizeDemo from './demos/ReorderResizeDemo.vue'
 import SortDemo from './demos/SortDemo.vue'
 import SortMergeDemo from './demos/SortMergeDemo.vue'
 import ColumnCompatDemo from './demos/ColumnCompatDemo.vue'
+import AdvanceCompatDemo from './demos/AdvanceCompatDemo.vue'
 import {
   columnTable,
   editableTable,
@@ -375,6 +395,7 @@ import reorderResizeSource from './demos/ReorderResizeDemo.vue?raw'
 import sortSource from './demos/SortDemo.vue?raw'
 import sortMergeSource from './demos/SortMergeDemo.vue?raw'
 import columnCompatSource from './demos/ColumnCompatDemo.vue?raw'
+import advanceCompatSource from './demos/AdvanceCompatDemo.vue?raw'
 
 const INSTALL_SOURCE = [
   '<!-- 1. 模板里直接用 -->',
@@ -428,7 +449,8 @@ export default {
     ReorderResizeDemo,
     SortDemo,
     SortMergeDemo,
-    ColumnCompatDemo
+    ColumnCompatDemo,
+    AdvanceCompatDemo
   },
   data() {
     return {
@@ -449,6 +471,7 @@ export default {
       sortSource,
       sortMergeSource,
       columnCompatSource,
+      advanceCompatSource,
       propsTable,
       columnTable,
       editableTable,
@@ -477,7 +500,8 @@ export default {
             { id: 'resize', title: '列宽拖拽' },
             { id: 'reorder', title: '列顺序拖拽' },
             { id: 'sort', title: '行排序' },
-            { id: 'column-compat', title: '列级兼容' }
+            { id: 'column-compat', title: '列级兼容' },
+            { id: 'advance-compat', title: '兼容壳' }
           ]
         },
         {

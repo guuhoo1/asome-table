@@ -1,0 +1,45 @@
+import { test, expect } from '@playwright/test'
+import { demo, rows, safeClick } from './helpers.js'
+
+test.describe('兼容壳 AdvanceTableCompat', () => {
+  test('标题栏、默认居中、列名插槽、选中提示条与 refresh', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '兼容壳')
+    const firstRow = rows(block).first()
+
+    // 标题栏
+    await expect(block.locator('.atc-header .atc-title')).toHaveText('订单列表')
+
+    // 默认居中：列上没写 align 的「状态」列
+    await expect(firstRow.locator('td[data-sgt-key="status"]')).toHaveCSS('text-align', 'center')
+
+    // 列名插槽覆盖了「客户」列的渲染
+    await expect(firstRow.locator('td[data-sgt-key="customer"]')).toHaveText('1. 张三')
+
+    // 选中提示条 + 清空
+    await safeClick(block.locator('tbody input[type="checkbox"]').first())
+    await expect(block.locator('.atc-alert')).toContainText('已选择：1 条')
+    await safeClick(block.locator('.atc-alert-clear'))
+    await expect(block.locator('.atc-alert')).toHaveCount(0)
+
+    // 刷新按钮 → refresh 事件
+    await safeClick(block.getByRole('button', { name: '刷新' }))
+    await expect(block.locator('.demo-hint')).toContainText('收到 refresh 事件')
+  })
+
+  test('列宽与列序拖拽默认开启（对应老壳 drag 默认 true）', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '兼容壳')
+
+    await expect(block.locator('.sgt-resizer').first()).toBeVisible()
+    await expect(block.locator('.sgt-head-row-1 [data-sgt-header-key]').first()).toBeVisible()
+  })
+
+  test('双击行触发 dblclickRow', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '兼容壳')
+
+    await rows(block).first().dblclick()
+    await expect(block.locator('.demo-hint')).toContainText('收到 dblclickRow：SO-20240001')
+  })
+})
