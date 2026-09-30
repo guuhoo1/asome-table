@@ -271,6 +271,27 @@
           </demo-block>
         </section>
 
+        <section id="column-compat" class="docs-section">
+          <h2 class="docs-h2">列级兼容</h2>
+          <p class="docs-p">
+            从 vela-pc 的 AdvanceTable 迁移过来时，存量页面的列定义可以直接用：
+            <code class="docs-inline-code">isSerialNumber</code> 按行号生成序号、
+            <code class="docs-inline-code">formatter</code> 做格式化、
+            <code class="docs-inline-code">isSubObj</code> 按点号路径深层取值，
+            另外支持 antd 的 <code class="docs-inline-code">ellipsis</code> 截断。
+            优先级与老实现一致：<code class="docs-inline-code">formatter</code> 最优先，
+            其次是序号列，然后才是深层取值与普通取值。
+          </p>
+          <demo-block
+            anchor="demo-column-compat"
+            title="列级兼容：序号 / formatter / 深层取值 / 省略号"
+            description="序号列按行号生成；金额列用 formatter 加 ¥；客户与标签列用 isSubObj 从 customer.name、customer.tag.label 深层取值；标签与备注列开了 ellipsis（悬停可见 title）。"
+            :source="columnCompatSource"
+          >
+            <column-compat-demo />
+          </demo-block>
+        </section>
+
         <section id="diff" class="docs-section">
           <h2 class="docs-h2">与 a-table 的差异</h2>
           <ul class="docs-list">
@@ -328,6 +349,7 @@ import ReorderFlatDemo from './demos/ReorderFlatDemo.vue'
 import ReorderResizeDemo from './demos/ReorderResizeDemo.vue'
 import SortDemo from './demos/SortDemo.vue'
 import SortMergeDemo from './demos/SortMergeDemo.vue'
+import ColumnCompatDemo from './demos/ColumnCompatDemo.vue'
 import {
   columnTable,
   editableTable,
@@ -352,6 +374,7 @@ import reorderFlatSource from './demos/ReorderFlatDemo.vue?raw'
 import reorderResizeSource from './demos/ReorderResizeDemo.vue?raw'
 import sortSource from './demos/SortDemo.vue?raw'
 import sortMergeSource from './demos/SortMergeDemo.vue?raw'
+import columnCompatSource from './demos/ColumnCompatDemo.vue?raw'
 
 const INSTALL_SOURCE = [
   '<!-- 1. 模板里直接用 -->',
@@ -404,7 +427,8 @@ export default {
     ReorderFlatDemo,
     ReorderResizeDemo,
     SortDemo,
-    SortMergeDemo
+    SortMergeDemo,
+    ColumnCompatDemo
   },
   data() {
     return {
@@ -424,6 +448,7 @@ export default {
       reorderResizeSource,
       sortSource,
       sortMergeSource,
+      columnCompatSource,
       propsTable,
       columnTable,
       editableTable,
@@ -451,7 +476,8 @@ export default {
             { id: 'empty', title: '空数据与单行表头' },
             { id: 'resize', title: '列宽拖拽' },
             { id: 'reorder', title: '列顺序拖拽' },
-            { id: 'sort', title: '行排序' }
+            { id: 'sort', title: '行排序' },
+            { id: 'column-compat', title: '列级兼容' }
           ]
         },
         {
