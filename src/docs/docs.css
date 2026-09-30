@@ -277,8 +277,15 @@ body {
 @media (max-width: 900px) {
   .docs-body {
     flex-direction: column;
+    /* 关键：列方向下必须拉伸交叉轴，否则 docs-main 会按内容撑开，
+       宽表格会把整页顶宽（实测 393px 视口里 main 变成 1381px） */
+    align-items: stretch;
     gap: 12px;
     padding: 16px 16px 72px;
+  }
+
+  .docs-main {
+    width: 100%;
   }
 
   .docs-nav {
