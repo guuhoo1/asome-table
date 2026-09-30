@@ -311,6 +311,17 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 
 ## 累积风险与待办（跨迭代）
 
+### 下次继续的入口（2026-09-30 收工）
+
+- 路线图进度：**F1–F7 已完成并合并到 `main`**；剩下 F8 合计行 → F9 展开行/固定底行/行拖拽/列筛选
+  → F10 搬进 vela-pc（新增文件 + 路径别名 + 灰度）→ F11 移除旧壳与依赖。
+- 收工时的仓库状态：`main` 本地领先 `origin/main` 2 个提交（F7），原因是推送时 GitHub 连不上
+  （这台机器需要开 VPN）；**网络恢复后先 `git push origin main`** 再继续开发。
+- 开发节奏（已验证多轮有效）：开 `codex/<feature>` 分支 → 写计划到
+  `docs/superpowers/plans/` → 纯逻辑加单测 → 组件接线 → 文档站示例 + Playwright 用例 →
+  三层验证（`pnpm test` / `pnpm build` / `pnpm test:e2e`）全绿 → 合并 main → 推送。
+- 下一轮开工只需说「继续」，我会从 F8 开始，并先补推 F7。
+
 1. **localStorage 列宽缓存兼容**（F4 必做）：老实现的 key 是 `getUniqueKey(路由 path)`，
    由「路由 + 列结构 hash（dataIndex/width 拼 JSON 再算 hash）」组成。复刻时 key 规则必须一致，
    否则用户已调好的列宽会丢失。
