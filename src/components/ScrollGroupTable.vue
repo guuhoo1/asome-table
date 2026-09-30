@@ -273,6 +273,8 @@
                 <template v-else>{{ displayText(leaf, record, index) }}</template>
               </td>
             </tr>
+            <!-- 合计行等自定义表体尾行：真实渲染，不像老壳那样 appendChild 注入 -->
+            <slot name="summary" />
           </template>
         </tbody>
       </table>

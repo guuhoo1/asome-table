@@ -95,6 +95,28 @@
       <template v-if="$scopedSlots.empty || $slots.empty" #empty>
         <slot name="empty" />
       </template>
+      <!-- 合计行：老壳是 appendChild 注入 DOM，这里用核心的 summary 插槽真渲染 -->
+      <template #summary>
+        <tr v-if="summary" class="atc-summary-row">
+          <td
+            v-if="summaryRender"
+            ref="summaryHost"
+            class="atc-summary-cell"
+            :colspan="summarySpan"
+          ></td>
+          <template v-else>
+            <td
+              v-for="(cell, index) in summaryCells"
+              :key="cell.key"
+              class="atc-summary-cell"
+              :class="{ 'is-first': index === 0 }"
+              :colspan="cell.colspan"
+            >
+              {{ cell.text }}
+            </td>
+          </template>
+        </tr>
+      </template>
     </scroll-group-table>
 
     <simple-pagination
@@ -114,6 +136,7 @@ import ScrollGroupTable from '../ScrollGroupTable.vue'
 import SimplePagination from './SimplePagination.vue'
 import { offsetOf } from './pagination.js'
 import { availableHeightOf } from './autoHeight.js'
+import { summaryCellsOf, summarySpanOf } from './summary.js'
 import {
   applyColumnCache,
   filterVisibleColumns,
@@ -324,6 +347,18 @@ export default {
       }
       return base
     },
+    /** 合计行的单元格（老壳规则：首列「合计」、分组列跨子列、有勾选列先占一格） */
+    summaryCells() {
+      if (!this.summary) return []
+      return summaryCellsOf({
+        columns: this.visibleColumns,
+        summaryData: this.summaryData,
+        hasSelection: !!this.rowSelection
+      })
+    },
+    summarySpan() {
+      return summarySpanOf(this.visibleColumns, !!this.rowSelection)
+    },
     showAlert() {
       if (!this.alert) return false
       if (this.$slots.alert && !this.selectedCount) return false
@@ -400,6 +435,20 @@ export default {
       this.isFixedHeight = !this.isFixedHeight
       this.$nextTick(this.updateTableHeight)
     },
+    /**
+     * 自定义合计行：兼容老契约（`summaryRender()` 无参、返回一个 DOM 节点），
+     * 把节点塞进整行的容器里；返回 VNode 时由上面的插槽分支负责渲染。
+     */
+    renderCustomSummary() {
+      if (!this.summary || typeof this.summaryRender !== 'function') return
+      const host = this.$refs.summaryHost
+      if (!host) return
+
+      host.innerHTML = ''
+      const node = this.summaryRender()
+      if (!node || typeof node !== 'object' || node.nodeType !== 1) return
+      host.appendChild(node)
+    },
     /** 老壳会把 dblclick 变成 dblclickRow 事件，同时保留页面自己传的 customRow */
     compatCustomRow(record, index) {
       const custom = typeof this.customRow === 'function' ? this.customRow(record, index) || {} : {}
@@ -436,6 +485,7 @@ export default {
     // 自动高度：老壳只在数据变化 / 开关切换时重算，这里额外补了 resize（更符合直觉）
     window.addEventListener('resize', this.updateTableHeight)
     this.$nextTick(this.updateTableHeight)
+    this.renderCustomSummary()
   },
   beforeDestroy() {
     document.removeEventListener('click', this.closeColumns)
@@ -453,6 +503,12 @@ export default {
     },
     reservedHeight() {
       this.$nextTick(this.updateTableHeight)
+    },
+    summary() {
+      this.$nextTick(this.renderCustomSummary)
+    },
+    summaryData() {
+      this.$nextTick(this.renderCustomSummary)
     }
   }
 }
@@ -574,5 +630,19 @@ export default {
 /* isHideEmpty：无数据时不显示空态行（老壳用 .hide-empty 隐藏 placeholder） */
 .atc--hide-empty ::v-deep .sgt-empty-row {
   display: none;
+}
+
+/* 合计行：对齐老壳样式（背景 #fafafa、加粗、文字 #ff4d4f、居中，首列左对齐） */
+.atc-summary-row .atc-summary-cell {
+  padding: 10px 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: #ff4d4f;
+  font-weight: 700;
+  text-align: center;
+}
+
+.atc-summary-row .atc-summary-cell.is-first {
+  text-align: left;
 }
 </style>

@@ -128,4 +128,17 @@ test.describe('兼容壳 AdvanceTableCompat', () => {
     await expect(heightSwitch).toHaveText('自适应高度')
     expect(await scroller.evaluate((el) => el.style.maxHeight)).toBe('')
   })
+
+  test('合计行：最后一行显示合计与 summaryData，分组列跨子列', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '合计行')
+    const lastRow = block.locator('tbody tr').last()
+
+    await expect(lastRow).toHaveClass(/atc-summary-row/)
+    await expect(lastRow.locator('td').first()).toHaveText('合计')
+    await expect(lastRow).toContainText('¥1,654.00')
+    await expect(lastRow).toContainText('4 条')
+    // 分组列「金额信息」跨它的两个子列
+    await expect(lastRow.locator('td[colspan="2"]')).toHaveCount(1)
+  })
 })

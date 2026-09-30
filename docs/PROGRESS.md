@@ -33,7 +33,7 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 | F5 | 列显隐（面板；可见性不持久化，与老壳一致） | ✅ 已完成 |
 | F6 | 分页透传 + `change` 参数对齐 | ✅ 已完成 |
 | F7 | 自动高度 `isNeedAutoTableHight` | ✅ 已完成 |
-| F8 | 合计行 `summary` | ⬜ |
+| F8 | 合计行 `summary` | ✅ 已完成 |
 | F9 | 展开行 / 固定底行 / 行拖拽 / 列筛选 | ⬜ |
 | F10 | 灰度切换逐页替换 + 度量 | ⬜ |
 | F11 | 移除旧组件与相关依赖 | ⬜ |
@@ -306,6 +306,41 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 26. **老壳不监听 resize**：`updateTableHeight` 只在 `dataSource` 变化与开关切换时触发，
     窗口缩放后高度会过期。这里做了唯一的"刻意改进"——补上 resize 监听，并在 README 里注明差异，
     避免以后有人以为是实现不一致。
+
+---
+
+## 迭代 7：F8 合计行（2026-09-30）✅
+
+**目标**：对齐老壳 `summary` / `summaryData` / `summaryRender`。
+
+**计划**：`docs/superpowers/plans/2026-09-30-f8-summary.md`
+
+**做了什么**
+
+- 核心加 `summary` 插槽（表体最后一行，**真实渲染**取代老壳的 `appendChild` 注入）
+- `src/components/table/summary.js`：`leafCountOf` / `summaryCellsOf` / `summarySpanOf` + 5 项单测
+- 兼容壳：合计行渲染（首列「合计」、其余按顶层列 key 取 `summaryData`、分组列跨子列、
+  有勾选列先占一格）+ `summaryRender` 兼容老契约（返回 DOM 节点则塞进整行容器）+ 老壳配色样式
+- 新增「兼容壳：合计行」文档章节与示例；E2E 新增 1 条 × 桌面/手机
+
+**验证**
+
+- `pnpm test`：**81 项全绿**（76 → 81）
+- `pnpm test:e2e`：**70 条全绿**（68 → 70）
+- `pnpm build`：通过
+- 关键结论：最后一行 class 为 `atc-summary-row`、首格「合计」、分组列 `colspan=2`、
+  `¥1,654.00` 与 `4 条` 都按顶层列 key 取到
+
+### 这一段踩的坑
+
+27. **又一次"期望值与真实语义不一致"**：我写测试时把 `summaryData` 的 key 写成**叶子列**的
+    `amount`，但老实现是按**顶层列**的 key 取值（分组列要用分组自己的 key）。
+    → 修测试并把这条规则写进 README，避免迁移时踩。
+    这已经是同类第 3 次了（`formatter` 优先级、`reservedHeight` 默认值、`summaryData` 的 key），
+    **规律是：凡是"照着老实现复刻"的逻辑，测试期望必须先回到老代码确认一遍，不能凭直觉写。**
+28. **DOM 注入 vs 真渲染的取舍**：老壳把合计行 `appendChild` 到 `tbody`，好处是不用改表格组件，
+    坏处是 Vue 不知道这行存在（更新/排序后会丢）。这里用核心的插槽真渲染，
+    视觉与结构都对齐，但 react 式更新也正确。
 
 ---
 

@@ -329,6 +329,25 @@
           </demo-block>
         </section>
 
+        <section id="advance-summary" class="docs-section">
+          <h2 class="docs-h2">兼容壳：合计行</h2>
+          <p class="docs-p">
+            老壳的 <code class="docs-inline-code">summary</code> +
+            <code class="docs-inline-code">summaryData</code> 照搬：表体最后一行显示「合计」，
+            其余列按<strong>顶层列的 key</strong> 从 <code class="docs-inline-code">summaryData</code> 取值，
+            分组列会跨它的子列；有勾选列时先占一个空单元格对齐。
+            老壳是用 <code class="docs-inline-code">appendChild</code> 注入 DOM，这里是真实渲染。
+          </p>
+          <demo-block
+            anchor="demo-advance-summary"
+            title="合计行：summary + summaryData"
+            description="最后一行是合计：「合计」固定在第一个数据列，分组「金额信息」用分组 key 取到 ¥1,654.00 并跨两列。"
+            :source="advanceSummarySource"
+          >
+            <advance-summary-demo />
+          </demo-block>
+        </section>
+
         <section id="diff" class="docs-section">
           <h2 class="docs-h2">与 a-table 的差异</h2>
           <ul class="docs-list">
@@ -389,6 +408,7 @@ import SortMergeDemo from './demos/SortMergeDemo.vue'
 import ColumnCompatDemo from './demos/ColumnCompatDemo.vue'
 import AdvanceCompatDemo from './demos/AdvanceCompatDemo.vue'
 import AdvanceAutoHeightDemo from './demos/AdvanceAutoHeightDemo.vue'
+import AdvanceSummaryDemo from './demos/AdvanceSummaryDemo.vue'
 import {
   columnTable,
   editableTable,
@@ -416,6 +436,7 @@ import sortMergeSource from './demos/SortMergeDemo.vue?raw'
 import columnCompatSource from './demos/ColumnCompatDemo.vue?raw'
 import advanceCompatSource from './demos/AdvanceCompatDemo.vue?raw'
 import advanceAutoHeightSource from './demos/AdvanceAutoHeightDemo.vue?raw'
+import advanceSummarySource from './demos/AdvanceSummaryDemo.vue?raw'
 
 const INSTALL_SOURCE = [
   '<!-- 1. 模板里直接用 -->',
@@ -471,7 +492,8 @@ export default {
     SortMergeDemo,
     ColumnCompatDemo,
     AdvanceCompatDemo,
-    AdvanceAutoHeightDemo
+    AdvanceAutoHeightDemo,
+    AdvanceSummaryDemo
   },
   data() {
     return {
@@ -494,6 +516,7 @@ export default {
       columnCompatSource,
       advanceCompatSource,
       advanceAutoHeightSource,
+      advanceSummarySource,
       propsTable,
       columnTable,
       editableTable,
@@ -524,7 +547,8 @@ export default {
             { id: 'sort', title: '行排序' },
             { id: 'column-compat', title: '列级兼容' },
             { id: 'advance-compat', title: '兼容壳' },
-            { id: 'advance-auto-height', title: '兼容壳 · 自动高度' }
+            { id: 'advance-auto-height', title: '兼容壳 · 自动高度' },
+            { id: 'advance-summary', title: '兼容壳 · 合计行' }
           ]
         },
         {

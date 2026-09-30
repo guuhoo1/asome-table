@@ -291,6 +291,24 @@ onChange(pagination, filters, sorter) {
 - 数据变化、开关切换、窗口缩放都会重算；关掉固定高度或没有数据时不限制高度
 - 与老壳的唯一差异：老壳只在数据变化 / 开关切换时重算，**窗口缩放不重算**；我们补上了 resize
 
+**合计行**（`summary` + `summaryData`，27 个文件在用）
+
+```vue
+<advance-table-compat
+  summary
+  :summary-data="{ 'group-amount': '¥1,654.00', customer: '4 条' }"
+  :columns="columns"
+  :data-source="rows"
+/>
+```
+
+- 表体**最后一行**显示合计：第一个数据列固定显示「合计」，其余列按**顶层列的 key**
+  从 `summaryData` 取值（分组列用分组自己的 key），分组列的 `colspan` = 它下面的叶子列数
+- 有勾选列时会先占一个空单元格对齐（老壳行为）
+- 样式对齐老壳：背景 `#fafafa`、加粗、文字 `#ff4d4f`、居中（首列左对齐）
+- 与老壳的差异：老壳用 `appendChild` 往 `tbody` 注入 DOM，这里是核心组件的 `summary` 插槽**真实渲染**
+- `summaryRender()` 仍兼容老契约（无参、返回 DOM 节点）→ 节点会被塞进合计行容器
+
 **已声明但暂未实现**（避免调用方报错或误用；按路线图 F4–F9 逐个补）：`pagination`、
 `summary` / `summaryData` / `summaryRender`、`isNeedAutoTableHight` / `reservedHeight`、
 `isFixedBottom` / `isFixedSecondBottom`、`dragSort`、`columnStorage`、`formatConditions`、
