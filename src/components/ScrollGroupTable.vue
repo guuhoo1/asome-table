@@ -255,10 +255,7 @@
                 <template v-else-if="leaf.slotName">
                   <slot
                     :name="leaf.slotName"
-                    :text="displayText(leaf, record, index)"
-                    :record="record"
-                    :index="index"
-                    :column="leaf"
+                    v-bind="slotProps(leaf, record, index)"
                   >{{ displayText(leaf, record, index) }}</slot>
                 </template>
                 <cell-renderer
@@ -778,6 +775,21 @@ export default {
       const value = resolveDisplayValue(record, leaf, index)
       if (value === '' || value === null || value === undefined) return EMPTY_TEXT
       return value
+    },
+    /**
+     * 作用域插槽的参数。除了 text/record/index/column，还额外给 dataSource 与 currentIndex——
+     * 老壳（AdvanceTable）就是按这个形状把数据传给页面插槽的，存量页面普遍依赖它们。
+     * currentIndex 目前等于 index（分页接上后会带上页码偏移）。
+     */
+    slotProps(leaf, record, index) {
+      return {
+        text: this.displayText(leaf, record, index),
+        record,
+        index,
+        column: leaf,
+        dataSource: this.displayRows,
+        currentIndex: index
+      }
     },
     isMergedAway(leaf, rowIndex) {
       return isMergedAwayInPlan(this.mergePlan, leaf.key, rowIndex)

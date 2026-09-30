@@ -6,7 +6,9 @@
       row-key="no"
       :row-selection="rowSelection"
       :custom-row="customRow"
-    />
+    >
+      <template #customer="{ text, currentIndex }">{{ currentIndex + 1 }}. {{ text }}</template>
+    </scroll-group-table>
     <p class="demo-hint">已选 {{ selectedKeys.length }} 项：{{ selectedKeys.join('、') || '无' }}</p>
   </div>
 </template>
@@ -30,7 +32,14 @@ export default {
       selectedKeys: ['SO-20240002'],
       columns: [
         { title: '订单号', dataIndex: 'no', key: 'no', width: 130 },
-        { title: '客户', dataIndex: 'customer', key: 'customer', width: 80 },
+        // 这一列用作用域插槽渲染，演示插槽能拿到 currentIndex 与 text
+        {
+          title: '客户',
+          dataIndex: 'customer',
+          key: 'customer',
+          width: 110,
+          scopedSlots: { customRender: 'customer' }
+        },
         { title: '部门', dataIndex: 'dept', key: 'dept', width: 120 },
         { title: '状态', dataIndex: 'status', key: 'status', width: 90 }
       ]

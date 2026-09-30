@@ -160,6 +160,13 @@ test.describe('表格内核', () => {
     await expect(dateRow.locator('td[data-sgt-key="deliveryDate"]')).toHaveText('2024-03-09')
   })
 
+  test('作用域插槽能拿到 dataSource 与 currentIndex', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '受控勾选 + 禁用行')
+    // 示例里 customer 列走插槽，渲染成「序号. 客户名」
+    await expect(rows(block).nth(2).locator('td[data-sgt-key="customer"]')).toHaveText('3. 王五')
+  })
+
   test('勾选：全选、半选、禁用行不参与', async ({ page }) => {
     await page.goto('/')
     const block = demo(page, '受控勾选 + 禁用行')
