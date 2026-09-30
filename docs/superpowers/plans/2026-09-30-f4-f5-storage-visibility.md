@@ -42,7 +42,7 @@
   - `applyColumnCache(columns, cache)`（恢复宽度与顺序，缺失的列排最后）
   - `filterVisibleColumns(columns, visibleConfig)`（顶层过滤，`undefined` 视为可见）
 
-- [ ] **Step 1: 写失败的测试（含老算法 fixture）**
+- [x] **Step 1: 写失败的测试（含老算法 fixture）**
 
 ```js
 import test from 'node:test'
@@ -110,12 +110,12 @@ test('filterVisibleColumns：undefined 视为可见', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**（模块不存在）
+- [x] **Step 2: 跑测试确认失败**（模块不存在）
 
 Run: `pnpm test`
 Expected: FAIL —— `Cannot find module '../src/components/table/columnStorage.js'`
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```js
 /** 复刻 draggerTable.getUniqueKey：只对顶层列的 key/dataIndex 与 width 做 hash */
@@ -192,9 +192,9 @@ export function filterVisibleColumns(columns, visibleConfig) {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**（61 → 66 项）
+- [x] **Step 4: 跑测试确认通过**（61 → 66 项）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add src/components/table/columnStorage.js tests/columnStorage.test.js
@@ -213,7 +213,7 @@ git commit -m "feat: 列宽/列序持久化纯逻辑（复刻老壳 key 规则�
 - Produces: prop `storageKey`（默认 `''`，为空时取 `this.$route && this.$route.path`，再兜底 `'default'`）；
   方法 `persistColumns(columns)`
 
-- [ ] **Step 1: 写失败的断言**
+- [x] **Step 1: 写失败的断言**
 
 ```js
 test('列宽与列序按老壳 key 规则持久化，刷新后恢复', async ({ page }) => {
@@ -248,9 +248,9 @@ test('列宽与列序按老壳 key 规则持久化，刷新后恢复', async ({ 
 })
 ```
 
-- [ ] **Step 2: 跑断言确认失败**（还没接持久化，localStorage 里没有 key）
+- [x] **Step 2: 跑断言确认失败**（还没接持久化，localStorage 里没有 key）
 
-- [ ] **Step 3: 兼容壳实现**
+- [x] **Step 3: 兼容壳实现**
 
 ```js
 props: { columnStorage: { type: Boolean, default: true }, storageKey: { type: String, default: '' } },
@@ -296,7 +296,7 @@ onColumnChange(payload) {
 
 （`cachedColumns` = `applyColumnCache(compatColumns, this.cache)`，`cache` 存在 data 里。）
 
-- [ ] **Step 4: 跑断言确认通过**
+- [x] **Step 4: 跑断言确认通过**
 
 ## Task 3: 列显隐面板
 
@@ -309,7 +309,7 @@ onColumnChange(payload) {
 - Produces: data `visibleConfig`（`{ [列 key]: boolean }`，初始全显）；事件 `update:visibleConfig`；
   方法 `resetVisibleConfig()` / `toggleAllVisible(checked)`
 
-- [ ] **Step 1: 写失败的断言**
+- [x] **Step 1: 写失败的断言**
 
 ```js
 test('列显隐：取消勾选即隐藏，全选/重置恢复', async ({ page }) => {
@@ -332,9 +332,9 @@ test('列显隐：取消勾选即隐藏，全选/重置恢复', async ({ page })
 })
 ```
 
-- [ ] **Step 2: 跑断言确认失败**（还没有面板）
+- [x] **Step 2: 跑断言确认失败**（还没有面板）
 
-- [ ] **Step 3: 实现面板（自建轻量下拉，不依赖 antd）**
+- [x] **Step 3: 实现面板（自建轻量下拉，不依赖 antd）**
 
 ```html
 <div class="atc-columns">
@@ -358,14 +358,14 @@ test('列显隐：取消勾选即隐藏，全选/重置恢复', async ({ page })
 点击面板外关闭：`mounted` 里挂 `document.addEventListener('click', this.closeColumns)`，
 `beforeDestroy` 移除。
 
-- [ ] **Step 4: 跑断言确认通过**
+- [x] **Step 4: 跑断言确认通过**
 
 ## Task 4: 文档与记录
 
-- [ ] **Step 1: README 补「列宽/列序持久化」与「列显隐」两小节**
+- [x] **Step 1: README 补「列宽/列序持久化」与「列显隐」两小节**
       （重点写 key 规则、存的形状、以及「列显隐不持久化，与老壳一致」）
-- [ ] **Step 2: `docs/PROGRESS.md` 追加迭代 4（F4+F5）**
-- [ ] **Step 3: 提交**
+- [x] **Step 2: `docs/PROGRESS.md` 追加迭代 4（F4+F5）**
+- [x] **Step 3: 提交**
 
 ---
 

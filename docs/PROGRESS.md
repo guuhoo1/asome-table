@@ -29,8 +29,8 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 | F1 | 行排序 `sorter` | ✅ 已完成并合并（2026-09-30） |
 | F2 | 列级兼容：`ellipsis` / `formatter` / `isSubObj` / `isSerialNumber` | ✅ 已完成（待合并） |
 | F3 | 兼容壳 `AdvanceTableCompat`（标题栏/刷新/列名插槽/选中提示条/默认居中） | ✅ 已完成（列配置与持久化属 F4/F5） |
-| F4 | 列宽持久化（复刻 localStorage key） | ⬜ |
-| F5 | 列显隐 + 持久化 | ⬜ |
+| F4 | 列宽/列序持久化（复刻 localStorage key） | ✅ 已完成 |
+| F5 | 列显隐（面板；可见性不持久化，与老壳一致） | ✅ 已完成 |
 | F6 | 分页透传 + `change` 参数对齐 | ⬜ |
 | F7 | 自动高度 `isNeedAutoTableHight` | ⬜ |
 | F8 | 合计行 `summary` | ⬜ |
@@ -191,6 +191,48 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
     改为在**核心**的插槽参数里直接补上，壳只负责转发——层次更干净，也让核心本身更好用。
 19. **新增章节要让结构断言跟着走**：`e2e/docs.spec.js` 硬编码导航项与示例数量
     （15 → 16、14 → 15），加一节就红一次。已确认这是期望行为（能防住"忘记注册章节"）。
+
+---
+
+## 迭代 4：F4 持久化 + F5 列显隐（2026-09-30）✅
+
+**目标**：复刻老壳的列宽/列序持久化（key 规则必须一致，否则用户已存的列宽失效），并补上列显隐面板。
+
+**计划**：`docs/superpowers/plans/2026-09-30-f4-f5-storage-visibility.md`
+
+**做了什么**
+
+- `src/components/table/columnStorage.js`：`columnsHash` / `storageKeyOf` / `readColumnCache` /
+  `writeColumnCache` / `applyColumnCache` / `filterVisibleColumns`，配 8 项单测，
+  其中用**老算法算出的固定 fixture**（hash `-5qiavs`、key `/order/list_-5qiavs`）把兼容性锁死
+- 兼容壳接持久化：`created` 读缓存 → `cachedColumns` 应用宽度与顺序 → 监听核心的
+  `column-resize` / `column-reorder`，按老壳的 key 与形状写回；`columnStorage` 默认 **true**（与老壳一致），
+  `storageKey` 不传时取 `$route.path`（组件不依赖 vue-router，取不到就兜底 `'default'`）
+- 列显隐面板：自建轻量下拉（全选/半选、逐列勾选、重置、点外关闭），过滤发生在兼容层，
+  核心组件完全不知道「列显隐」这回事
+- 文档站示例传 `storage-key="atc-demo"`；新增 2 条 E2E × 桌面/手机（持久化刷新恢复、显隐与重置）
+
+**验证**
+
+- `pnpm test`：**69 项全绿**（61 → 69）
+- `pnpm test:e2e`：**64 条全绿**（60 → 64）
+- `pnpm build`：通过
+- 关键结论：拖宽后 localStorage 里出现 `atc-demo_<base36 hash>`，值形如
+  `[{dataIndex:'customer',width:...}]`，**刷新后列宽自动恢复**；取消勾选某列后表头/表体同步消失，
+  全选与重置都能恢复
+
+### 这一段踩的坑
+
+20. **把「序列化前的对象」当成期望值**：单测里我写了 `{ dataIndex: 'g', width: undefined }`，
+    而 `JSON.stringify` 会把 `width: undefined` 丢掉——**这恰好就是老实现的存储形状**。
+    → 期望改成 `{ dataIndex: 'g' }`。教训：断言要针对「落盘后的形状」，不是内存里的中间态。
+21. **模板里手滑写了两个 `:columns` 绑定**（Vue 2 对重复 attribute 直接报错）。
+    → 改模板后立刻 `pnpm build` 兜底，别等 E2E 才发现。
+22. **读老代码读出来的两个反直觉事实**：① 老壳的列显隐**不持久化**（`visibleConfig` 只是内存态，
+    每次挂载由 ActionColumns 重置为全显）；② 老壳的 `@reset` 在当前版本其实是**死代码**
+    （`resetColumns` 里 emit 被注释掉了，但 `AdvanceTable` 仍绑着监听）。
+    → 为无缝，我们保持「可见性不持久化」；但把 `reset` 事件补上——依赖一个从不触发的事件是坏味道，
+    补上不会有兼容风险。
 
 ---
 

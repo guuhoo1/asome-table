@@ -6,6 +6,7 @@
       :data-source="rows"
       row-key="no"
       :row-selection="rowSelection"
+      storage-key="atc-demo"
       @refresh="onRefresh"
       @dblclickRow="onDblclick"
     >

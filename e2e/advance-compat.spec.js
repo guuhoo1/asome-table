@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { demo, rows, safeClick } from './helpers.js'
+import { centerOn, demo, rows, safeClick } from './helpers.js'
 
 test.describe('兼容壳 AdvanceTableCompat', () => {
   test('标题栏、默认居中、列名插槽、选中提示条与 refresh', async ({ page }) => {
@@ -41,5 +41,59 @@ test.describe('兼容壳 AdvanceTableCompat', () => {
 
     await rows(block).first().dblclick()
     await expect(block.locator('.demo-hint')).toContainText('收到 dblclickRow：SO-20240001')
+  })
+
+  test('列宽与列序按老壳 key 规则持久化，刷新后恢复', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '兼容壳')
+    const widthOf = (key) =>
+      block
+        .locator(`thead [data-sgt-header-key="${key}"]`)
+        .evaluate((el) => Math.round(el.getBoundingClientRect().width))
+
+    const before = await widthOf('customer')
+    const resizer = block.locator('.sgt-resizer[data-sgt-resizer="customer"]')
+    await centerOn(resizer)
+    const box = await resizer.boundingBox()
+    await page.mouse.move(box.x + 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + 62, box.y + box.height / 2, { steps: 10 })
+    await page.mouse.up()
+
+    const after = await widthOf('customer')
+    expect(after).toBeGreaterThan(before + 40)
+
+    // 存到了老壳同款 key 上：<storageKey>_<base36 hash>
+    const stored = await page.evaluate(() => {
+      const key = Object.keys(window.localStorage).find((item) => item.startsWith('atc-demo_'))
+      return key ? { key, value: JSON.parse(window.localStorage.getItem(key)) } : null
+    })
+    expect(stored).not.toBeNull()
+    expect(stored.key).toMatch(/^atc-demo_-?[0-9a-z]+$/)
+    expect(stored.value.some((item) => item.dataIndex === 'customer' && item.width > 150)).toBe(true)
+
+    // 刷新后列宽从缓存恢复
+    await page.reload()
+    expect(await widthOf('customer')).toBe(after)
+  })
+
+  test('列显隐：取消勾选即隐藏，全选与重置恢复', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '兼容壳')
+
+    await safeClick(block.locator('.atc-columns-btn'))
+    const panel = block.locator('.atc-columns-panel')
+    await expect(panel).toBeVisible()
+
+    await panel.locator('input[data-column-key="customer"]').uncheck()
+    await expect(block.locator('thead [data-sgt-header-key="customer"]')).toHaveCount(0)
+    await expect(block.locator('thead [data-sgt-header-key="status"]')).toHaveCount(1)
+
+    await panel.locator('.atc-columns-all input').check()
+    await expect(block.locator('thead [data-sgt-header-key="customer"]')).toHaveCount(1)
+
+    await panel.locator('input[data-column-key="status"]').uncheck()
+    await safeClick(panel.getByRole('button', { name: '重置' }))
+    await expect(block.locator('thead [data-sgt-header-key="status"]')).toHaveCount(1)
   })
 })

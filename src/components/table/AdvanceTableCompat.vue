@@ -10,6 +10,41 @@
       <div class="atc-actions">
         <slot name="actions" />
         <button type="button" class="atc-action" title="刷新" @click="handleRefresh">刷新</button>
+        <div class="atc-columns">
+          <button
+            type="button"
+            class="atc-columns-btn"
+            title="列配置"
+            @click.stop="columnsOpen = !columnsOpen"
+          >
+            列配置
+          </button>
+          <div v-if="columnsOpen" class="atc-columns-panel" @click.stop>
+            <div class="atc-columns-head">
+              <label class="atc-columns-all">
+                <input
+                  type="checkbox"
+                  :checked="allVisible"
+                  :indeterminate.prop="someVisible"
+                  @change="toggleAllVisible($event.target.checked)"
+                />
+                列展示
+              </label>
+              <button type="button" class="atc-columns-reset" @click="resetVisibleConfig">
+                重置
+              </button>
+            </div>
+            <label v-for="item in columnConfigList" :key="item.key" class="atc-columns-item">
+              <input
+                type="checkbox"
+                :data-column-key="item.key"
+                :checked="item.visible"
+                @change="toggleVisible(item.key, $event.target.checked)"
+              />
+              {{ item.title }}
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -27,7 +62,7 @@
 
     <scroll-group-table
       ref="table"
-      :columns="compatColumns"
+      :columns="visibleColumns"
       :data-source="dataSource"
       :row-key="rowKey"
       :row-selection="rowSelection"
@@ -40,6 +75,8 @@
       :resizable="drag"
       :reorderable="drag"
       v-on="$listeners"
+      @column-resize="onColumnChange"
+      @column-reorder="onColumnChange"
     >
       <!-- 老壳会给每一列自动挂一个以列 key 命名的插槽，页面里写 <template #customer> 即可覆盖 -->
       <template v-for="name in scopedSlotNames" #[name]="slotProps">
@@ -54,6 +91,13 @@
 
 <script>
 import ScrollGroupTable from '../ScrollGroupTable.vue'
+import {
+  applyColumnCache,
+  filterVisibleColumns,
+  readColumnCache,
+  storageKeyOf,
+  writeColumnCache
+} from './columnStorage.js'
 
 /**
  * AdvanceTableCompat —— vela-pc 老壳 AdvanceTable 的兼容层。
@@ -91,6 +135,10 @@ export default {
     drag: { type: Boolean, default: true },
     alert: { type: [Boolean, Object], default: true },
     isHideEmpty: { type: Boolean, default: false },
+    /** 列宽 / 列序持久化；老壳默认开启 */
+    columnStorage: { type: Boolean, default: true },
+    /** 持久化 key 的「路由」部分；不传时取 this.$route.path，再兜底 'default' */
+    storageKey: { type: String, default: '' },
 
     // ---- 声明以兼容老壳调用方（当前版本不处理）----
     size: { type: String, default: 'small' },
@@ -111,7 +159,6 @@ export default {
     customHeaderRow: { type: Function, default: null },
     transformCellText: { type: Function, default: null },
     getPopupContainer: { type: Function, default: null },
-    columnStorage: { type: Boolean, default: false },
     columnDragSort: { type: Boolean, default: true },
     dragSort: { type: Boolean, default: false },
     formatConditions: { type: Boolean, default: false },
@@ -126,6 +173,20 @@ export default {
     selectedRows: { type: Array, default: undefined },
     selectedRowChange: { type: Function, default: null },
     clearSelectedRowKeys: { type: Boolean, default: false }
+  },
+  data() {
+    return {
+      /** 从 localStorage 读出来的列宽/列序缓存 */
+      columnCache: null,
+      /** { [列 key]: boolean }；没记录的列默认可见（与老壳一致，且不持久化） */
+      visibleConfig: {},
+      columnsOpen: false
+    }
+  },
+  created() {
+    if (this.columnStorage) {
+      this.columnCache = readColumnCache(this.getStorage(), this.cacheKey)
+    }
   },
   computed: {
     /** 老壳行为：每列注入 align（默认 center）与以列 key 命名的作用域插槽 */
@@ -165,6 +226,37 @@ export default {
       const keys = this.rowSelection && this.rowSelection.selectedRowKeys
       return Array.isArray(keys) ? keys.length : 0
     },
+    /** 持久化用的 key：与老实现逐字节一致（路由 + 列结构 hash） */
+    cacheKey() {
+      const path = this.storageKey || (this.$route && this.$route.path) || 'default'
+      return storageKeyOf(path, this.columns)
+    },
+    /** 兼容列 → 套上缓存里的宽度与顺序 */
+    cachedColumns() {
+      return applyColumnCache(this.compatColumns, this.columnCache)
+    },
+    /** 再按列显隐过滤，最后交给核心组件 */
+    visibleColumns() {
+      return filterVisibleColumns(this.cachedColumns, this.visibleConfig)
+    },
+    /** 列配置面板的数据：只列顶层列（与老壳的 ActionColumns 一致） */
+    columnConfigList() {
+      return this.compatColumns.map((column) => {
+        const key = column.key || column.dataIndex
+        return {
+          key,
+          title: column.title,
+          visible: this.visibleConfig[key] === undefined ? true : !!this.visibleConfig[key]
+        }
+      })
+    },
+    allVisible() {
+      return this.columnConfigList.every((item) => item.visible)
+    },
+    someVisible() {
+      const visibleCount = this.columnConfigList.filter((item) => item.visible).length
+      return visibleCount > 0 && visibleCount < this.columnConfigList.length
+    },
     showAlert() {
       if (!this.alert) return false
       if (this.$slots.alert && !this.selectedCount) return false
@@ -172,6 +264,41 @@ export default {
     }
   },
   methods: {
+    getStorage() {
+      try {
+        return typeof window !== 'undefined' ? window.localStorage : null
+      } catch (error) {
+        return null
+      }
+    },
+    /** 核心组件拖完列宽/列序后，把结果按老壳的 key 与形状写回存储 */
+    onColumnChange(payload) {
+      if (!this.columnStorage) return
+      if (payload && Array.isArray(payload.columns)) {
+        writeColumnCache(this.getStorage(), this.cacheKey, payload.columns)
+      }
+    },
+    toggleVisible(key, visible) {
+      this.visibleConfig = Object.assign({}, this.visibleConfig, { [key]: visible })
+      this.$emit('update:visibleConfig', this.visibleConfig)
+    },
+    toggleAllVisible(visible) {
+      const next = {}
+      this.columnConfigList.forEach((item) => {
+        next[item.key] = visible
+      })
+      this.visibleConfig = next
+      this.$emit('update:visibleConfig', next)
+    },
+    /** 重置为「全部可见」，与老壳 ActionColumns 的重置一致（也发 reset 事件） */
+    resetVisibleConfig() {
+      this.visibleConfig = {}
+      this.$emit('update:visibleConfig', {})
+      this.$emit('reset')
+    },
+    closeColumns() {
+      if (this.columnsOpen) this.columnsOpen = false
+    },
     /** 老壳会把 dblclick 变成 dblclickRow 事件，同时保留页面自己传的 customRow */
     compatCustomRow(record, index) {
       const custom = typeof this.customRow === 'function' ? this.customRow(record, index) || {} : {}
@@ -201,6 +328,13 @@ export default {
     toggleRowSelection(record, index) {
       if (this.$refs.table) this.$refs.table.toggleRowSelection(record, index)
     }
+  },
+  mounted() {
+    // 点面板外面关掉列配置面板
+    document.addEventListener('click', this.closeColumns)
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this.closeColumns)
   }
 }
 </script>
@@ -266,6 +400,55 @@ export default {
 
 .atc-alert-clear {
   color: #2563eb;
+  cursor: pointer;
+}
+
+.atc-columns {
+  position: relative;
+}
+
+.atc-columns-panel {
+  position: absolute;
+  right: 0;
+  z-index: 30;
+  min-width: 180px;
+  max-height: 300px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  text-align: left;
+}
+
+.atc-columns-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.atc-columns-all,
+.atc-columns-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.atc-columns-reset {
+  border: none;
+  background: none;
+  color: #2563eb;
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
 }
 

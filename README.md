@@ -235,6 +235,21 @@ props / 事件 / 插槽写法不用改，内部把契约翻译给核心组件。
   壳里两种大小写都会发一次，避免写错就静默失效
 - `isHideEmpty`：无数据时不渲染空态行
 
+**列宽 / 列序持久化**（`columnStorage` 默认 `true`，与老壳一致）
+
+- key 规则与老实现**逐字节一致**：`${path}_${hash.toString(36)}`，其中 hash 只取**顶层列**的
+  `key || dataIndex` 与 `width` 拼 JSON 后按 `hash = (hash << 5) - hash + charCode` 累加——
+  所以用户已经调好的列宽在切换后依然有效（`tests/columnStorage.test.js` 用固定 fixture 把这条锁住了）
+- 存的形状：递归收集所有列成 `[{ dataIndex, width }]`，**按当前顺序**，顺序与宽度一起持久化
+- `storageKey` 不传时取 `this.$route.path`（老壳行为），再兜底 `'default'`；组件不依赖 vue-router
+- `fixed` 列的宽度不会被缓存覆盖（老壳行为）
+
+**列显隐**（标题栏的「列配置」按钮）
+
+- 面板提供：全选（半选态）、逐列勾选、重置；点击面板外自动关闭
+- 与老壳一致：**可见性不持久化**（老壳的 `visibleConfig` 只存在内存里，挂载时重置为全部可见）
+- 重置会发 `reset` 事件（老壳当前版本的 `@reset` 其实从不触发，我们补上更安全）
+
 **已声明但暂未实现**（避免调用方报错或误用；按路线图 F4–F9 逐个补）：`pagination`、
 `summary` / `summaryData` / `summaryRender`、`isNeedAutoTableHight` / `reservedHeight`、
 `isFixedBottom` / `isFixedSecondBottom`、`dragSort`、`columnStorage`、`formatConditions`、
