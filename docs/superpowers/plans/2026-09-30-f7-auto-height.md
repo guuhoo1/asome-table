@@ -37,7 +37,7 @@ scrollY = calculatedHeight                        // 关掉固定高度时 scrol
 - Produces: `availableHeightOf({ viewportHeight, tableTop, reservedHeight, minHeight = 200 })`
   → `Math.max(minHeight, Math.floor(viewportHeight - tableTop - reservedHeight))`
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 ```js
 import test from 'node:test'
@@ -53,7 +53,7 @@ test('按 视口高 - 顶部 - 预留 计算，并有 200 的最小高度', () =
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败** → **Step 3: 实现** → **Step 4: 通过（74 → 75）** → **Step 5: 提交**
+- [x] **Step 2: 跑测试确认失败** → **Step 3: 实现** → **Step 4: 通过（74 → 75）** → **Step 5: 提交**
 
 ## Task 2: 兼容壳接线自动高度
 
@@ -68,7 +68,7 @@ test('按 视口高 - 顶部 - 预留 计算，并有 200 的最小高度', () =
 - Produces: data `isFixedHeight`（默认 true）、`autoHeight`（计算值）；
   computed `scrollConfig`；方法 `updateTableHeight()`
 
-- [ ] **Step 1: 写失败的断言**
+- [x] **Step 1: 写失败的断言**
 
 ```js
 test('自动高度：固定高度时按视口计算 max-height，切换开关后变自适应', async ({ page }) => {
@@ -86,8 +86,8 @@ test('自动高度：固定高度时按视口计算 max-height，切换开关后
 })
 ```
 
-- [ ] **Step 2: 跑断言确认失败**
-- [ ] **Step 3: 实现**
+- [x] **Step 2: 跑断言确认失败**
+- [x] **Step 3: 实现**
 
 ```js
 // data
@@ -143,7 +143,7 @@ reservedHeight() { this.$nextTick(this.updateTableHeight) },
 </button>
 ```
 
-- [ ] **Step 4: 跑断言确认通过**
+- [x] **Step 4: 跑断言确认通过**
 
 ## Task 3: 文档与记录
 

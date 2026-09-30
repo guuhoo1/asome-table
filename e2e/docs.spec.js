@@ -6,7 +6,7 @@ test.describe('文档站', () => {
     await page.goto('/')
 
     const navItems = page.locator('.docs-nav a')
-    await expect(navItems).toHaveCount(16)
+    await expect(navItems).toHaveCount(17)
 
     const sectionIds = await page
       .locator('.docs-section')
@@ -26,12 +26,13 @@ test.describe('文档站', () => {
       'sort',
       'column-compat',
       'advance-compat',
+      'advance-auto-height',
       'diff',
       'api'
     ])
 
     const blocks = page.locator('.demo-block')
-    await expect(blocks).toHaveCount(15)
+    await expect(blocks).toHaveCount(16)
 
     // 每个示例卡片都要渲染出表格
     const tablesPerBlock = await blocks.evaluateAll((list) =>

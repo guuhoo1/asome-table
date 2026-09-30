@@ -111,4 +111,21 @@ test.describe('兼容壳 AdvanceTableCompat', () => {
     await safeClick(panel.getByRole('button', { name: '重置' }))
     await expect(block.locator('thead [data-sgt-header-key="status"]')).toHaveCount(1)
   })
+
+  test('自动高度：固定高度按视口算 max-height，切开关后自适应', async ({ page }) => {
+    await page.goto('/')
+    const block = demo(page, '自动高度')
+    const scroller = block.locator('.sgt-scroll')
+
+    // 固定高度：核心拿到 scroll.y，用 max-height 实现（最小 200）
+    const pinned = await scroller.evaluate((el) => el.style.maxHeight)
+    expect(Number.parseInt(pinned, 10)).toBeGreaterThanOrEqual(200)
+
+    const heightSwitch = block.locator('.atc-height-switch')
+    await expect(heightSwitch).toHaveText('固定高度')
+    await safeClick(heightSwitch)
+
+    await expect(heightSwitch).toHaveText('自适应高度')
+    expect(await scroller.evaluate((el) => el.style.maxHeight)).toBe('')
+  })
 })

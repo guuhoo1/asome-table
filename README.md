@@ -275,6 +275,22 @@ onChange(pagination, filters, sorter) {
 - 分页激活时序号列与插槽的 `currentIndex` 会带上页码偏移
   （核心的 `rowIndexOffset = (current - 1) * pageSize`）
 
+**自动高度**（`isNeedAutoTableHight`，168 个文件在用）
+
+```vue
+<advance-table-compat
+  is-need-auto-table-hight
+  :reserved-height="160"
+  :columns="columns"
+  :data-source="rows"
+/>
+```
+
+- 高度 = `max(200, 视口高 − 表格顶部 − reservedHeight)`（复刻老壳算法），标题栏会出现
+  「固定高度 / 自适应高度」开关
+- 数据变化、开关切换、窗口缩放都会重算；关掉固定高度或没有数据时不限制高度
+- 与老壳的唯一差异：老壳只在数据变化 / 开关切换时重算，**窗口缩放不重算**；我们补上了 resize
+
 **已声明但暂未实现**（避免调用方报错或误用；按路线图 F4–F9 逐个补）：`pagination`、
 `summary` / `summaryData` / `summaryRender`、`isNeedAutoTableHight` / `reservedHeight`、
 `isFixedBottom` / `isFixedSecondBottom`、`dragSort`、`columnStorage`、`formatConditions`、

@@ -10,6 +10,15 @@
       <div class="atc-actions">
         <slot name="actions" />
         <button type="button" class="atc-action" title="刷新" @click="handleRefresh">刷新</button>
+        <button
+          v-if="isNeedAutoTableHight"
+          type="button"
+          class="atc-action atc-height-switch"
+          :title="isFixedHeight ? '取消固定高度' : '固定高度'"
+          @click="toggleFixedHeight"
+        >
+          {{ isFixedHeight ? '固定高度' : '自适应高度' }}
+        </button>
         <div class="atc-columns">
           <button
             type="button"
@@ -66,7 +75,7 @@
       :data-source="dataSource"
       :row-key="rowKey"
       :row-selection="rowSelection"
-      :scroll="scroll"
+      :scroll="scrollConfig"
       :bordered="bordered"
       :show-header="showHeader"
       :table-layout="tableLayout"
@@ -104,6 +113,7 @@
 import ScrollGroupTable from '../ScrollGroupTable.vue'
 import SimplePagination from './SimplePagination.vue'
 import { offsetOf } from './pagination.js'
+import { availableHeightOf } from './autoHeight.js'
 import {
   applyColumnCache,
   filterVisibleColumns,
@@ -195,7 +205,10 @@ export default {
       visibleConfig: {},
       columnsOpen: false,
       /** withDefaultPagination 时组件内部维护的页码 */
-      pageInfo: { pageStart: 1, pageNums: 10 }
+      pageInfo: { pageStart: 1, pageNums: 10 },
+      /** 自动高度：是否固定高度（老壳标题栏里的开关），以及算出来的高度 */
+      isFixedHeight: true,
+      autoHeight: 0
     }
   },
   created() {
@@ -303,6 +316,14 @@ export default {
       if (!config) return 0
       return offsetOf(config.current, config.pageSize)
     },
+    /** 自动高度开启且处于固定高度时，把算出来的高度交给核心（核心用 max-height 实现） */
+    scrollConfig() {
+      const base = Object.assign({}, this.scroll)
+      if (this.isNeedAutoTableHight && this.isFixedHeight && this.autoHeight) {
+        base.y = this.autoHeight
+      }
+      return base
+    },
     showAlert() {
       if (!this.alert) return false
       if (this.$slots.alert && !this.selectedCount) return false
@@ -357,6 +378,28 @@ export default {
 
       this.$emit('change', Object.assign({}, config, { current: page, pageSize }), {}, {})
     },
+    /**
+     * 复刻老壳的 updateTableHeight：
+     * 高度 = max(200, 视口高 − 表格顶部 − reservedHeight)；关掉固定高度或无数据时不限制高度。
+     */
+    updateTableHeight() {
+      if (!this.isNeedAutoTableHight) return
+      if (!this.isFixedHeight || !this.dataSource.length) {
+        this.autoHeight = 0
+        return
+      }
+
+      const rect = this.$el.getBoundingClientRect()
+      this.autoHeight = availableHeightOf({
+        viewportHeight: window.innerHeight,
+        tableTop: rect.top,
+        reservedHeight: this.reservedHeight || 0
+      })
+    },
+    toggleFixedHeight() {
+      this.isFixedHeight = !this.isFixedHeight
+      this.$nextTick(this.updateTableHeight)
+    },
     /** 老壳会把 dblclick 变成 dblclickRow 事件，同时保留页面自己传的 customRow */
     compatCustomRow(record, index) {
       const custom = typeof this.customRow === 'function' ? this.customRow(record, index) || {} : {}
@@ -390,9 +433,27 @@ export default {
   mounted() {
     // 点面板外面关掉列配置面板
     document.addEventListener('click', this.closeColumns)
+    // 自动高度：老壳只在数据变化 / 开关切换时重算，这里额外补了 resize（更符合直觉）
+    window.addEventListener('resize', this.updateTableHeight)
+    this.$nextTick(this.updateTableHeight)
   },
   beforeDestroy() {
     document.removeEventListener('click', this.closeColumns)
+    window.removeEventListener('resize', this.updateTableHeight)
+  },
+  watch: {
+    dataSource() {
+      this.$nextTick(this.updateTableHeight)
+    },
+    isFixedHeight() {
+      this.$nextTick(this.updateTableHeight)
+    },
+    isNeedAutoTableHight() {
+      this.$nextTick(this.updateTableHeight)
+    },
+    reservedHeight() {
+      this.$nextTick(this.updateTableHeight)
+    }
   }
 }
 </script>

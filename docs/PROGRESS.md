@@ -32,7 +32,7 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 | F4 | 列宽/列序持久化（复刻 localStorage key） | ✅ 已完成 |
 | F5 | 列显隐（面板；可见性不持久化，与老壳一致） | ✅ 已完成 |
 | F6 | 分页透传 + `change` 参数对齐 | ✅ 已完成 |
-| F7 | 自动高度 `isNeedAutoTableHight` | ⬜ |
+| F7 | 自动高度 `isNeedAutoTableHight` | ✅ 已完成 |
 | F8 | 合计行 `summary` | ⬜ |
 | F9 | 展开行 / 固定底行 / 行拖拽 / 列筛选 | ⬜ |
 | F10 | 灰度切换逐页替换 + 度量 | ⬜ |
@@ -272,6 +272,40 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 24. **纯逻辑放哪里的判断**：分页的页码序列（省略号）是纯计算，抽到 `pagination.js` 才有单测；
     UI 单独一个 `SimplePagination.vue`；兼容壳只做「配置翻译 + 事件」。层次清楚后，
     核心组件一行分页代码都没有。
+
+---
+
+## 迭代 6：F7 自动高度（2026-09-30）✅
+
+**目标**：对齐老壳 `isNeedAutoTableHight` / `reservedHeight` / 固定高度开关。
+
+**计划**：`docs/superpowers/plans/2026-09-30-f7-auto-height.md`
+
+**做了什么**
+
+- `src/components/table/autoHeight.js`：`availableHeightOf()`（`max(200, 视口高 − 顶部 − 预留)`）+ 2 项单测
+- 兼容壳：`isFixedHeight` / `autoHeight` 状态、`scrollConfig`（把高度作为 `scroll.y` 交给核心，
+  核心用 `max-height` 实现吸顶 + 内部滚动）、`updateTableHeight()`、标题栏的「固定高度 / 自适应高度」开关；
+  数据变化 / 开关切换 / `reservedHeight` / 窗口 resize 都会重算
+- 新增「兼容壳：自动高度」文档章节与示例（12 行数据）；E2E 新增 1 条 × 桌面/手机
+
+**验证**
+
+- `pnpm test`：**76 项全绿**（74 → 76）
+- `pnpm test:e2e`：**68 条全绿**（66 → 68）
+- `pnpm build`：通过
+- 关键结论：默认给核心的滚动区设了 `max-height`（≥200px，实测按视口算出来）；
+  点标题栏开关后按钮文案变「自适应高度」，`max-height` 被清空（表格恢复随内容撑开）
+
+### 这一段踩的坑
+
+25. **默认值该放哪一层又踩了一次**：`reservedHeight` 的默认 110 属于**组件 prop**，
+    纯函数 `availableHeightOf()` 里缺失就当 0。我写测试时期望 `{viewportHeight: 900}` 得到 700
+    （心里默认了 110），实际是 900——和上一轮 `formatter`/`isSerialNumber` 的坑同源：
+    **纯函数的默认值要与组件的默认值分开看**，断言要针对函数自身的契约。
+26. **老壳不监听 resize**：`updateTableHeight` 只在 `dataSource` 变化与开关切换时触发，
+    窗口缩放后高度会过期。这里做了唯一的"刻意改进"——补上 resize 监听，并在 README 里注明差异，
+    避免以后有人以为是实现不一致。
 
 ---
 

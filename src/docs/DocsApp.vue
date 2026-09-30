@@ -311,6 +311,24 @@
           </demo-block>
         </section>
 
+        <section id="advance-auto-height" class="docs-section">
+          <h2 class="docs-h2">兼容壳：自动高度</h2>
+          <p class="docs-p">
+            老壳的 <code class="docs-inline-code">isNeedAutoTableHight</code> 用法照搬：
+            表格高度按「视口高度 − 表格顶部 − <code class="docs-inline-code">reservedHeight</code>」自动计算
+            （最小 200），标题栏里会出现「固定高度 / 自适应高度」开关。数据变化、开关切换、
+            窗口缩放都会重算；关掉固定高度或没有数据时不限制高度。
+          </p>
+          <demo-block
+            anchor="demo-advance-auto-height"
+            title="自动高度：固定高度 / 自适应开关"
+            description="默认按视口算出固定高度（表头吸顶、表体内部滚动）；点标题栏的开关切成自适应高度，表格恢复成随内容撑开。"
+            :source="advanceAutoHeightSource"
+          >
+            <advance-auto-height-demo />
+          </demo-block>
+        </section>
+
         <section id="diff" class="docs-section">
           <h2 class="docs-h2">与 a-table 的差异</h2>
           <ul class="docs-list">
@@ -370,6 +388,7 @@ import SortDemo from './demos/SortDemo.vue'
 import SortMergeDemo from './demos/SortMergeDemo.vue'
 import ColumnCompatDemo from './demos/ColumnCompatDemo.vue'
 import AdvanceCompatDemo from './demos/AdvanceCompatDemo.vue'
+import AdvanceAutoHeightDemo from './demos/AdvanceAutoHeightDemo.vue'
 import {
   columnTable,
   editableTable,
@@ -396,6 +415,7 @@ import sortSource from './demos/SortDemo.vue?raw'
 import sortMergeSource from './demos/SortMergeDemo.vue?raw'
 import columnCompatSource from './demos/ColumnCompatDemo.vue?raw'
 import advanceCompatSource from './demos/AdvanceCompatDemo.vue?raw'
+import advanceAutoHeightSource from './demos/AdvanceAutoHeightDemo.vue?raw'
 
 const INSTALL_SOURCE = [
   '<!-- 1. 模板里直接用 -->',
@@ -450,7 +470,8 @@ export default {
     SortDemo,
     SortMergeDemo,
     ColumnCompatDemo,
-    AdvanceCompatDemo
+    AdvanceCompatDemo,
+    AdvanceAutoHeightDemo
   },
   data() {
     return {
@@ -472,6 +493,7 @@ export default {
       sortMergeSource,
       columnCompatSource,
       advanceCompatSource,
+      advanceAutoHeightSource,
       propsTable,
       columnTable,
       editableTable,
@@ -501,7 +523,8 @@ export default {
             { id: 'reorder', title: '列顺序拖拽' },
             { id: 'sort', title: '行排序' },
             { id: 'column-compat', title: '列级兼容' },
-            { id: 'advance-compat', title: '兼容壳' }
+            { id: 'advance-compat', title: '兼容壳' },
+            { id: 'advance-auto-height', title: '兼容壳 · 自动高度' }
           ]
         },
         {
