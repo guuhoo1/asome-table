@@ -35,11 +35,14 @@ export function serialNumberOf(index, offset = 0) {
  * 一处刻意改进：序号列若同时配了 formatter，传给 formatter 的是**序号**，
  * 而老实现会传 `record[undefined]`（也就是 NaN）——这种组合本身没有意义，按更合理的行为处理。
  */
-export function resolveDisplayValue(record, column, index) {
+export function resolveDisplayValue(record, column, index, extraSerialOffset = 0) {
   if (!column) return undefined
 
   const baseValue = column.isSerialNumber
-    ? serialNumberOf(index, column.serialNumberOffset)
+    ? serialNumberOf(
+        index,
+        (Number(column.serialNumberOffset) || 0) + (Number(extraSerialOffset) || 0)
+      )
     : resolveColumnValue(record, column)
 
   if (typeof column.formatter === 'function') {

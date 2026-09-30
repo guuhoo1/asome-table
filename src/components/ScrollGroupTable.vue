@@ -393,6 +393,8 @@ export default {
     customRow: { type: Function, default: null },
     /** { columnKey, order }；传了 = 受控，否则组件内部维护 */
     sortedInfo: { type: Object, default: null },
+    /** 行号偏移（分页时 = (current - 1) * pageSize）：影响序号列与插槽的 currentIndex */
+    rowIndexOffset: { type: Number, default: 0 },
     /** 开启后表头右边缘出现拖宽热区（列上写 resizable: false 可单独关掉） */
     resizable: { type: Boolean, default: false },
     /** 开启后可以拖动表头调整列顺序（列上写 reorderable: false 可单独关掉） */
@@ -772,7 +774,7 @@ export default {
      * 作用域插槽与 customRender 拿到的 text 也是这份值（与老壳行为一致）。
      */
     displayText(leaf, record, index) {
-      const value = resolveDisplayValue(record, leaf, index)
+      const value = resolveDisplayValue(record, leaf, index, this.rowIndexOffset)
       if (value === '' || value === null || value === undefined) return EMPTY_TEXT
       return value
     },
@@ -788,7 +790,7 @@ export default {
         index,
         column: leaf,
         dataSource: this.displayRows,
-        currentIndex: index
+        currentIndex: index + (this.rowIndexOffset || 0)
       }
     },
     isMergedAway(leaf, rowIndex) {

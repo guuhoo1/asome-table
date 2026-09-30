@@ -60,6 +60,18 @@ test('formatter 能拿到原始值与整行记录', () => {
   assert.deepEqual(seen, [[299, 'SO-1', 5]])
 })
 
+test('resolveDisplayValue 支持额外的序号偏移（分页时用）', () => {
+  const record = {}
+
+  assert.equal(resolveDisplayValue(record, { isSerialNumber: true }, 0, 10), 11)
+  assert.equal(
+    resolveDisplayValue(record, { isSerialNumber: true, serialNumberOffset: 5 }, 2, 10),
+    18
+  )
+  // 非序号列不受偏移影响
+  assert.equal(resolveDisplayValue({ no: 'A' }, { dataIndex: 'no' }, 0, 10), 'A')
+})
+
 test('serialNumberOf 从 1 开始，可带分页偏移', () => {
   assert.equal(serialNumberOf(0), 1)
   assert.equal(serialNumberOf(9), 10)
