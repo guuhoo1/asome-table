@@ -37,21 +37,36 @@
                   v-if="cell.type === 'leaf'"
                   :key="'h1-' + cell.key"
                   class="sgt-cell"
-                  :class="[cellClasses(cell.leaf), headerStateClasses(cell.key)]"
+                  :class="[
+                    cellClasses(cell.leaf),
+                    headerStateClasses(cell.key),
+                    { 'sgt-sortable': !!cell.leaf.sorter }
+                  ]"
                   :style="cellStyle(cell.leaf)"
                   :rowspan="2"
+                  :aria-sort="ariaSortOf(cell.leaf)"
                   :data-sgt-key="cell.key"
                   :data-sgt-header-key="cell.key"
                   :data-sgt-container="cell.leaf.containerKey"
+                  @click="handleHeaderClick(cell.leaf)"
                   @pointerdown="beginHeaderDrag(cell.key, cell.leaf.containerKey, $event)"
                 >
                   {{ cell.leaf.title }}
+                  <span
+                    v-if="cell.leaf.sorter"
+                    class="sgt-sorter"
+                    :class="{
+                      'is-ascend': sortOrderOf(cell.leaf) === 'ascend',
+                      'is-descend': sortOrderOf(cell.leaf) === 'descend'
+                    }"
+                  ><i class="sgt-sorter-up"></i><i class="sgt-sorter-down"></i></span>
                   <span
                     v-if="canResize(cell.leaf)"
                     class="sgt-resizer"
                     :data-sgt-resizer="cell.key"
                     @pointerdown.stop.prevent="beginResize(cell.leaf, $event)"
                     @dblclick.stop="resetColumnWidth(cell.leaf)"
+                    @click.stop="stopEvent"
                   ></span>
                 </th>
                 <th
@@ -77,20 +92,35 @@
                 v-for="leaf in normalizedColumns.leaves"
                 :key="'h1-' + leaf.key"
                 class="sgt-cell"
-                :class="[cellClasses(leaf), headerStateClasses(leaf.key)]"
+                :class="[
+                  cellClasses(leaf),
+                  headerStateClasses(leaf.key),
+                  { 'sgt-sortable': !!leaf.sorter }
+                ]"
                 :style="cellStyle(leaf)"
+                :aria-sort="ariaSortOf(leaf)"
                 :data-sgt-key="leaf.key"
                 :data-sgt-header-key="leaf.key"
                 :data-sgt-container="leaf.containerKey"
+                @click="handleHeaderClick(leaf)"
                 @pointerdown="beginHeaderDrag(leaf.key, leaf.containerKey, $event)"
               >
                 {{ leaf.title }}
+                <span
+                  v-if="leaf.sorter"
+                  class="sgt-sorter"
+                  :class="{
+                    'is-ascend': sortOrderOf(leaf) === 'ascend',
+                    'is-descend': sortOrderOf(leaf) === 'descend'
+                  }"
+                ><i class="sgt-sorter-up"></i><i class="sgt-sorter-down"></i></span>
                 <span
                   v-if="canResize(leaf)"
                   class="sgt-resizer"
                   :data-sgt-resizer="leaf.key"
                   @pointerdown.stop.prevent="beginResize(leaf, $event)"
                   @dblclick.stop="resetColumnWidth(leaf)"
+                  @click.stop="stopEvent"
                 ></span>
               </th>
             </template>
@@ -101,20 +131,35 @@
               v-for="leaf in groupLeaves"
               :key="'h2-' + leaf.key"
               class="sgt-cell"
-              :class="[cellClasses(leaf), headerStateClasses(leaf.key)]"
+              :class="[
+                cellClasses(leaf),
+                headerStateClasses(leaf.key),
+                { 'sgt-sortable': !!leaf.sorter }
+              ]"
               :style="cellStyle(leaf)"
+              :aria-sort="ariaSortOf(leaf)"
               :data-sgt-key="leaf.key"
               :data-sgt-header-key="leaf.key"
               :data-sgt-container="leaf.containerKey"
+              @click="handleHeaderClick(leaf)"
               @pointerdown="beginHeaderDrag(leaf.key, leaf.containerKey, $event)"
             >
               {{ leaf.title }}
+              <span
+                v-if="leaf.sorter"
+                class="sgt-sorter"
+                :class="{
+                  'is-ascend': sortOrderOf(leaf) === 'ascend',
+                  'is-descend': sortOrderOf(leaf) === 'descend'
+                }"
+              ><i class="sgt-sorter-up"></i><i class="sgt-sorter-down"></i></span>
               <span
                 v-if="canResize(leaf)"
                 class="sgt-resizer"
                 :data-sgt-resizer="leaf.key"
                 @pointerdown.stop.prevent="beginResize(leaf, $event)"
                 @dblclick.stop="resetColumnWidth(leaf)"
+                @click.stop="stopEvent"
               ></span>
             </th>
           </tr>
@@ -130,7 +175,7 @@
           </template>
           <template v-else>
             <tr
-              v-for="(record, index) in dataSource"
+              v-for="(record, index) in displayRows"
               :key="getRowKey(record, index)"
               class="sgt-row"
               :class="rowClasses(record, index)"
@@ -283,6 +328,14 @@ import {
   sameKeyOrder
 } from './table/columnLayout.js'
 import { fromEditorValue, toEditorValue } from './table/editorValue.js'
+import {
+  SORT_ASCEND,
+  SORT_DESCEND,
+  findColumnByKey,
+  nextSortOrder,
+  resolveSortInfo,
+  sortRows
+} from './table/sort.js'
 import { isEmptyValue, toComparableString } from './table/values.js'
 
 const GROUP_PALETTE = ['sgt-g-0', 'sgt-g-1', 'sgt-g-2', 'sgt-g-3', 'sgt-g-4']
@@ -338,6 +391,8 @@ export default {
     tableLayout: { type: String, default: 'auto' },
     rowClassName: { type: Function, default: null },
     customRow: { type: Function, default: null },
+    /** { columnKey, order }；传了 = 受控，否则组件内部维护 */
+    sortedInfo: { type: Object, default: null },
     /** 开启后表头右边缘出现拖宽热区（列上写 resizable: false 可单独关掉） */
     resizable: { type: Boolean, default: false },
     /** 开启后可以拖动表头调整列顺序（列上写 reorderable: false 可单独关掉） */
@@ -364,6 +419,8 @@ export default {
       dragState: null,
       dropIndicator: null,
       dragGhost: null,
+      innerSortedInfo: null,
+      suppressHeaderClick: false,
       radioGroupName: 'sgt-radio-' + (uidSeed += 1),
       emptyText: EMPTY_TEXT
     }
@@ -388,6 +445,24 @@ export default {
     },
     rootContainer() {
       return ROOT_CONTAINER
+    },
+    /** 当前排序状态：受控优先（传了 sortedInfo 就以 props 为准） */
+    activeSortInfo() {
+      return resolveSortInfo(this.sortedInfo, this.innerSortedInfo)
+    },
+    sortColumn() {
+      const info = this.activeSortInfo
+      if (!info.columnKey || !info.order) return null
+      return findColumnByKey(this.columns, info.columnKey)
+    },
+    /**
+     * 渲染、合并计算、编辑定位统一用这份「显示顺序」。
+     * 没排序时就是父组件的 dataSource 本身（同一引用）。
+     */
+    displayRows() {
+      const column = this.sortColumn
+      if (!column) return this.dataSource
+      return sortRows(this.dataSource, column, this.activeSortInfo.order)
     },
     /** 应用了内部列顺序覆盖后的列定义 */
     orderedColumns() {
@@ -501,7 +576,7 @@ export default {
      * 只有声明了 merge 的列才会出现在这里。
      */
     mergePlan() {
-      return buildMergePlan(this.normalizedColumns.leaves, this.dataSource)
+      return buildMergePlan(this.normalizedColumns.leaves, this.displayRows)
     },
     totalLeafCount() {
       return this.normalizedColumns.leaves.length + (this.selectionColumnEnabled ? 1 : 0)
@@ -564,7 +639,7 @@ export default {
     },
     /** 未被 getCheckboxProps 禁用的行（含原始下标，供 rowKey 函数使用） */
     selectableRowList() {
-      return selectableRows(this.dataSource, this.rowSelection)
+      return selectableRows(this.displayRows, this.rowSelection)
     },
     allSelected() {
       return selectionState(this.selectedKeys, this.selectableRowList, this.rowKey).all
@@ -579,6 +654,7 @@ export default {
       this.measureFixedCells()
       this.updateShadows()
     }
+    this.applyDefaultSortOrder()
     window.addEventListener('resize', this._handleResize)
     this.$nextTick(this._handleResize)
   },
@@ -620,7 +696,11 @@ export default {
         // 这两个是「拖宽 / 拖顺序」的开关，默认跟随表级开关；容器 key 用来限制只能在同层拖动
         resizable: column.resizable !== false,
         reorderable: column.reorderable !== false,
-        containerKey: containerKey || ROOT_CONTAINER
+        containerKey: containerKey || ROOT_CONTAINER,
+        // 行排序：sorter 为 true 按 dataIndex 比较，为函数时用自定义比较
+        sorter: column.sorter || null,
+        sortDirections: column.sortDirections || null,
+        defaultSortOrder: column.defaultSortOrder || null
       }
     },
     toNumber(value) {
@@ -717,6 +797,50 @@ export default {
         classes[this.dropIndicator.side === 'before' ? 'is-drop-before' : 'is-drop-after'] = true
       }
       return classes
+    },
+    /* ---------------- 行排序 ---------------- */
+    sortOrderOf(leaf) {
+      const info = this.activeSortInfo
+      return info.columnKey === leaf.key ? info.order : null
+    },
+    /** 拖宽热区自己吞掉 click，别让它冒泡到表头触发排序 */
+    stopEvent(event) {
+      if (event && event.stopPropagation) event.stopPropagation()
+    },
+    ariaSortOf(leaf) {
+      const order = this.sortOrderOf(leaf)
+      if (order === SORT_ASCEND) return 'ascending'
+      if (order === SORT_DESCEND) return 'descending'
+      return 'none'
+    },
+    handleHeaderClick(leaf) {
+      // 刚拖完列头（换位或拖宽）时不要顺带触发排序
+      if (this.suppressHeaderClick) return
+      if (!leaf.sorter) return
+      // 排序会让行移动，先把正在编辑的格子收掉
+      if (this.editingCell) this.cancelEdit()
+
+      const info = this.activeSortInfo
+      const current = info.columnKey === leaf.key ? info.order : null
+      const order = nextSortOrder(current, leaf.sortDirections)
+      const nextInfo = { columnKey: order ? leaf.key : null, order }
+
+      if (!this.sortedInfo) this.innerSortedInfo = nextInfo
+      this.$emit('update:sortedInfo', nextInfo)
+      this.$emit('sort-change', {
+        columnKey: nextInfo.columnKey,
+        order: nextInfo.order,
+        column: leaf,
+        dataSource: this.dataSource
+      })
+    },
+    /** 列的 defaultSortOrder：只在没有受控排序、也没手动排过的时候生效 */
+    applyDefaultSortOrder() {
+      if (this.sortedInfo) return
+      if (this.innerSortedInfo) return
+      const leaf = this.normalizedColumns.leaves.filter((item) => item.defaultSortOrder)[0]
+      if (!leaf) return
+      this.innerSortedInfo = { columnKey: leaf.key, order: leaf.defaultSortOrder }
     },
     /**
      * 拖宽开启后，先按当前真实渲染宽度把每列固化下来，
@@ -881,6 +1005,14 @@ export default {
       const containerKey = state ? state.containerKey : null
       const key = state ? state.key : null
       this.detachDrag()
+
+      if (active) {
+        // 拖完列头会紧跟一个原生 click，别让它顺带触发排序
+        this.suppressHeaderClick = true
+        this.$nextTick(() => {
+          this.suppressHeaderClick = false
+        })
+      }
 
       if (!active || !nextKeys || !containerKey) return
       const currentKeys = this.containerKeys(containerKey)
@@ -1080,7 +1212,8 @@ export default {
       const cell = this.editingCell
       if (!cell) return
 
-      const record = this.dataSource[cell.rowIndex]
+      // 排序只改显示顺序，编辑要落到「显示的那一行」
+      const record = this.displayRows[cell.rowIndex]
       if (!record) {
         // 行已经不在了（父组件换了数据），直接收摊
         this.cancelEdit()
@@ -1101,9 +1234,15 @@ export default {
     },
     finishEdit(cell, value, raw) {
       const { rowIndex, field, leaf } = cell
+      // 合并跨度按显示顺序算
       const mergedRowIndexes = spanRowIndexes(this.mergePlan, leaf.key, rowIndex)
+      // 写回则要落到父数组的原始下标上，避免排序状态下把父数组顺序改掉
+      const originalRowIndexes = mergedRowIndexes
+        .map((index) => this.dataSource.indexOf(this.displayRows[index]))
+        .filter((index) => index >= 0)
 
-      const oldValue = this.dataSource[rowIndex] ? this.dataSource[rowIndex][field] : undefined
+      const displayRecord = this.displayRows[rowIndex]
+      const oldValue = displayRecord ? displayRecord[field] : undefined
       // 拿编辑器里的原始文本跟「旧值转成编辑器格式」比：没动过的格子直接收摊，
       // 日期这类进编辑器会被规范化的类型也不会被误判成改动
       const unchanged =
@@ -1118,18 +1257,21 @@ export default {
 
       // 不改 props：产出一份新数组交给父组件，配合 :data-source.sync 使用
       const nextDataSource = this.dataSource.map((item, index) =>
-        mergedRowIndexes.indexOf(index) >= 0 ? Object.assign({}, item, { [field]: value }) : item
+        originalRowIndexes.indexOf(index) >= 0
+          ? Object.assign({}, item, { [field]: value })
+          : item
       )
 
       this.$emit('update:dataSource', nextDataSource)
       this.$emit('cell-change', {
         value,
         oldValue,
-        record: this.dataSource[rowIndex],
+        record: displayRecord,
         dataIndex: field,
         rowIndex,
         column: leaf,
         mergedRowIndexes,
+        originalRowIndexes,
         dataSource: nextDataSource
       })
     },
@@ -1404,6 +1546,47 @@ body.sgt-resizing {
 body.sgt-dragging {
   cursor: grabbing;
   user-select: none;
+}
+
+/* ---------- 行排序 ---------- */
+.sgt-table thead th.sgt-sortable {
+  cursor: pointer;
+}
+
+/* 同时开着拖列时，拖动优先，所以还原成抓取光标 */
+.sgt-table thead th.sgt-sortable.sgt-reorderable {
+  cursor: grab;
+}
+
+.sgt-sorter {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.sgt-sorter i {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.sgt-sorter-up {
+  border-bottom: 5px solid #cbd5e1;
+}
+
+.sgt-sorter-down {
+  border-top: 5px solid #cbd5e1;
+}
+
+.sgt-sorter.is-ascend .sgt-sorter-up {
+  border-bottom-color: #2563eb;
+}
+
+.sgt-sorter.is-descend .sgt-sorter-down {
+  border-top-color: #2563eb;
 }
 
 .sgt-bordered th,
