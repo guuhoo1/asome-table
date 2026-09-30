@@ -51,7 +51,7 @@
   `{ text, record, index, column, dataSource, currentIndex }`（`currentIndex` 目前等于 `index`，
   分页在 F6 接上后会带上偏移）
 
-- [ ] **Step 1: 写失败的断言**
+- [x] **Step 1: 写失败的断言**
 
 在 `e2e/table.spec.js` 的「表格内核」里加一条：
 
@@ -77,12 +77,12 @@ test('作用域插槽能拿到 dataSource 与 currentIndex', async ({ page }) =>
 </scroll-group-table>
 ```
 
-- [ ] **Step 2: 跑断言确认失败**
+- [x] **Step 2: 跑断言确认失败**
 
 Run: `pnpm build && pnpm exec playwright test e2e/table.spec.js --project=desktop`
 Expected: FAIL —— 单元格文本是「王五」而不是「3. 王五」（插槽拿不到 `currentIndex`）
 
-- [ ] **Step 3: 核心补参数**
+- [x] **Step 3: 核心补参数**
 
 ```js
 slotProps(leaf, record, index) {
@@ -99,12 +99,12 @@ slotProps(leaf, record, index) {
 
 模板里三处 `<slot>` / `<cell-renderer>` 的 `v-bind` 换成 `v-bind="slotProps(leaf, record, index)"`。
 
-- [ ] **Step 4: 跑断言确认通过**
+- [x] **Step 4: 跑断言确认通过**
 
 Run: `pnpm test:e2e`
 Expected: PASS —— 新增 2 条（桌面 + 手机）全绿，原有 52 条不变
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add src/components/ScrollGroupTable.vue src/docs/demos/SelectionDemo.vue e2e/table.spec.js
@@ -132,7 +132,7 @@ git commit -m "feat: 作用域插槽补充 dataSource / currentIndex 参数"
   事件 `refresh` / `reset` / `dblclickRow` / `drop` / `change`；插槽 `title` / `actions` / `search` /
   `alertContent` / 列名作用域插槽 / `empty`
 
-- [ ] **Step 1: 写兼容壳（契约翻译，全部逻辑都在这一层）**
+- [x] **Step 1: 写兼容壳（契约翻译，全部逻辑都在这一层）**
 
 关键实现（完整文件在实现时补全）：
 
@@ -207,7 +207,7 @@ computed: {
 </div>
 ```
 
-- [ ] **Step 2: 写示例（演示默认居中、列名插槽覆盖、选中提示条、refresh 事件）**
+- [x] **Step 2: 写示例（演示默认居中、列名插槽覆盖、选中提示条、refresh 事件）**
 
 ```vue
 <template>
@@ -225,7 +225,7 @@ computed: {
 </template>
 ```
 
-- [ ] **Step 3: 写 E2E 断言**
+- [x] **Step 3: 写 E2E 断言**
 
 ```js
 test.describe('兼容壳', () => {
@@ -250,12 +250,12 @@ test.describe('兼容壳', () => {
 })
 ```
 
-- [ ] **Step 4: 跑断言**
+- [x] **Step 4: 跑断言**
 
 Run: `pnpm test:e2e`
 Expected: PASS —— 新增用例全绿，原有 54 条不变
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add src/components/table/AdvanceTableCompat.vue src/docs/demos/AdvanceCompatDemo.vue src/docs/DocsApp.vue e2e/advance-compat.spec.js
@@ -268,9 +268,9 @@ git commit -m "feat: 兼容壳 AdvanceTableCompat（默认居中、列名插槽�
 - Modify: `README.md`（新增「兼容壳 AdvanceTableCompat」小节，列出已支持 / 暂未支持的 prop）
 - Modify: `docs/PROGRESS.md`（填「迭代 3」）
 
-- [ ] **Step 1: README 增加小节**（已支持 / 未支持两张清单 + 迁移步骤）
-- [ ] **Step 2: 追加 PROGRESS.md 的迭代 3**（做了什么 / 验证 / 踩坑）
-- [ ] **Step 3: 提交**
+- [x] **Step 1: README 增加小节**（已支持 / 未支持两张清单 + 迁移步骤）
+- [x] **Step 2: 追加 PROGRESS.md 的迭代 3**（做了什么 / 验证 / 踩坑）
+- [x] **Step 3: 提交**
 
 ```bash
 git add README.md docs/PROGRESS.md

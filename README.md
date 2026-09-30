@@ -216,6 +216,31 @@ Esc 取消，`select` 选完即提交。校验失败时编辑器不退出、错�
 合并列被编辑时 `mergedRowIndexes` 是整组的下标（值会写回整组，否则按值合并会立刻裂开）。
 点可编辑单元格不会冒泡到 `customRow` 的行点击上，所以「点行切换勾选」不会和进入编辑打架。
 
+## 兼容壳 AdvanceTableCompat（给 vela-pc 存量页面）
+
+`src/components/table/AdvanceTableCompat.vue` 是老壳 `AdvanceTable` 的兼容层——页面的
+props / 事件 / 插槽写法不用改，内部把契约翻译给核心组件。
+
+**已实现**
+
+- 列上没写 `align` 时**默认居中**（老壳会统一注入 `align: 'center'`）
+- 每列自动挂一个**以列 key 命名的作用域插槽**：页面里写
+  `<template #customer="{ text, record, index, currentIndex, dataSource }">` 即可覆盖该列渲染
+  （`text` 是格式化后的值，`currentIndex` 目前等于 `index`，接上分页后会带页码偏移）
+- **标题栏**：`title` prop 或 `#title` 插槽 + `#search` / `#actions` 插槽 + 刷新按钮（发 `refresh` 事件）
+- **选中提示条**：`rowSelection.selectedRowKeys` 非空时显示「已选择：N 条 + 清空」，
+  点清空会调用 `rowSelection.onChange([], [])`
+- `drag`（默认 `true`）= 列宽拖拽 + 列顺序拖拽，与老壳一致
+- `dblclickRow(record, index)`：老壳页面统一写 `@dblclickRow`（实测 23 个文件全是驼峰），
+  壳里两种大小写都会发一次，避免写错就静默失效
+- `isHideEmpty`：无数据时不渲染空态行
+
+**已声明但暂未实现**（避免调用方报错或误用；按路线图 F4–F9 逐个补）：`pagination`、
+`summary` / `summaryData` / `summaryRender`、`isNeedAutoTableHight` / `reservedHeight`、
+`isFixedBottom` / `isFixedSecondBottom`、`dragSort`、`columnStorage`、`formatConditions`、
+`withDefaultPagination`、`loading` / `locale` / `size` 等。这些 prop 会被接受（不报错，
+也不会把未知属性透到 DOM），但当前版本没有对应行为。
+
 ## 列级兼容（从 AdvanceTable 迁移）
 
 vela-pc 老壳 `AdvanceTable` 的三条列约定可以直接用了，配合 antd 的 `ellipsis`：

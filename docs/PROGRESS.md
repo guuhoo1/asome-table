@@ -28,7 +28,7 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
 | --- | --- | --- |
 | F1 | 行排序 `sorter` | ✅ 已完成并合并（2026-09-30） |
 | F2 | 列级兼容：`ellipsis` / `formatter` / `isSubObj` / `isSerialNumber` | ✅ 已完成（待合并） |
-| F3 | 兼容壳 `AdvanceTableCompat`（标题栏/刷新/列配置/选中提示条/默认居中） | ⬜ |
+| F3 | 兼容壳 `AdvanceTableCompat`（标题栏/刷新/列名插槽/选中提示条/默认居中） | ✅ 已完成（列配置与持久化属 F4/F5） |
 | F4 | 列宽持久化（复刻 localStorage key） | ⬜ |
 | F5 | 列显隐 + 持久化 | ⬜ |
 | F6 | 分页透传 + `change` 参数对齐 | ⬜ |
@@ -153,6 +153,44 @@ hangutils 等依赖），要求**无缝衔接**：页面代码零改动、视觉
     （反过来说，这条断言也确实防住了「忘记注册章节」这类错误）。
 16. **徽章配色与列约定不一致**：`statusBadgeClass` 原先直接读 `record[dataIndex]`，
     如果状态列用了 `isSubObj` 或 `formatter` 就会取错。→ 改成按「显示文本」映射，三处渲染口径统一。
+
+---
+
+## 迭代 3：F3 兼容壳（2026-09-30）✅
+
+**目标**：给 vela-pc 存量页面提供契约一致的兼容组件，做到「页面代码零改动」。
+
+**计划**：`docs/superpowers/plans/2026-09-30-f3-compat-shell.md`
+
+**做了什么**
+
+- 核心组件补插槽参数：作用域插槽除 `text/record/index/column` 外，再给 `dataSource` 与
+  `currentIndex`（老壳就是这么传给页面插槽的，500+ 个文件依赖它）
+- `src/components/table/AdvanceTableCompat.vue`：只做契约翻译，不引入任何依赖——
+  默认居中、每列自动挂 `scopedSlots.customRender = 列 key`、标题栏（标题/搜索/操作/刷新）、
+  选中提示条与清空、`drag` → 列宽 + 列序拖拽、`dblclickRow`、`isHideEmpty`；
+  老壳其余 props 全部声明接受（不报错、不透到 DOM），暂不处理
+- 文档站新增「兼容壳」章节与示例；README 列出「已实现 / 已声明未实现」两张清单
+- E2E：`e2e/advance-compat.spec.js` 3 条 × 桌面/手机
+
+**验证**
+
+- `pnpm test`：**61 项全绿**（本迭代未新增纯逻辑）
+- `pnpm test:e2e`：**60 条全绿**（54 → 60，新增 3 条 × 2 project）
+- `pnpm build`：通过
+
+### 这一段踩的坑
+
+17. **Vue 2 事件名大小写不匹配**：壳里 `$emit('dblclickRow')`，示例里写 `@dblclick-row`，
+    监听永远不触发（Vue 2 不在两者之间做转换）。→ 先去 vela-pc 统计实际写法
+    （`@dblclickRow` 23 个文件、`@dblclick-row` 0 个），确认页面的真实约定是驼峰；
+    壳里改成**两种都发**做双保险，示例改成驼峰。教训：迁移类改动要先看存量代码的真实写法，
+    不要按「框架推荐」猜。
+18. **兼容壳需要核心先补插槽参数**：老壳页面插槽依赖 `currentIndex` / `dataSource`。
+    一开始想「在壳里做动态插槽转发并补参数」，但 Vue 2 里动态插槽名 + 转发不可靠；
+    改为在**核心**的插槽参数里直接补上，壳只负责转发——层次更干净，也让核心本身更好用。
+19. **新增章节要让结构断言跟着走**：`e2e/docs.spec.js` 硬编码导航项与示例数量
+    （15 → 16、14 → 15），加一节就红一次。已确认这是期望行为（能防住"忘记注册章节"）。
 
 ---
 
